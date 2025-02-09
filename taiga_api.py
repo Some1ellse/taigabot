@@ -53,6 +53,33 @@ def get_user_story_history(user_story_id, target_time=None, time_threshold_ms=50
         print(f"Failed to get user story history: {e}")
         return None
 
+def get_user_story(user_story_id):
+    """Get a user story by ID from Taiga API
+
+    Args:
+        user_story_id (int): The ID of the user story
+
+    Returns:
+        dict: User story data if successful, None if failed
+    """
+    # Set up headers with authentication
+    headers = {
+        "Authorization": f"Bearer {TAIGA_AUTH_TOKEN}",
+        "Content-Type": "application/json"
+    }
+
+    # Make request to get user story
+    story_url = f"{TAIGA_BASE_URL}/api/v1/userstories/{user_story_id}"
+
+    try:
+        response = requests.get(story_url, headers=headers, timeout=30)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching user story: {e}")
+        return None
+
+
 #if __name__ == "__main__":
 #    # Example usage
 #    story_id =266   # Replace with actual user story ID
