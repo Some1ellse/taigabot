@@ -13,7 +13,7 @@ def process_webhook(data):
     print(data)
     change = data.get('change', {})
     diff = change.get('diff', {})
-    tags = diff.get('tags', {})
+    tags = diff.get('tags', {}) #noqa: F841
 
     if data['type'] != 'userstory' and data['type'] != 'task' and data['type'] != 'issue':
         return
@@ -133,7 +133,11 @@ def process_webhook(data):
                 print(f"Retrying fetch user story... {retries-1} attempts remaining")
                 time.sleep(3)
             retries -= 1
-        print("User story fetched" if user_story_data else "Failed to fetch user story after 3 attempts")
+        print(
+            "User story fetched"
+            if user_story_data else
+            "Failed to fetch user story after 3 attempts"
+            )
         print(user_story_data)
 
     description = (
