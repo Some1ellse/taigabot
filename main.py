@@ -3,9 +3,9 @@ A Discord bot that integrates with Taiga webhooks to relay project updates to a 
 This module handles webhook processing, message formatting, and Discord communication.
 """
 import threading
-import json
 import hmac
 import hashlib
+import asyncio
 import discord
 from discord import Intents, Client
 from flask import Flask, request, abort
@@ -27,11 +27,12 @@ def respond():
     """Catch headers and payload, verify signature and pass payload along if verified"""
     headers = dict(request.headers)
     if 'X-Taiga-Webhook-Signature' not in headers:
+        print("Missing X-Taiga-Webhook-Signature header")
         abort(401)
     signature = headers['X-Taiga-Webhook-Signature']
+    raw_data = request.get_data().decode('utf-8')
+    valid = verify_signature(SECRET_KEY, raw_data) == signature
     payload = request.json
-    data = json.dumps(payload)
-    valid = verify_signature(SECRET_KEY, data) == signature
     if valid:
         print("Attempting to process webhook...")
         processed_data = process_webhook(payload)
@@ -54,6 +55,7 @@ def respond():
         client.loop.create_task(send_post(**post_args))
         return '', 200
     else:
+        print("Signature verification failed")
         abort(401)
 
 
