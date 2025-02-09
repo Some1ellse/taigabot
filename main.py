@@ -114,7 +114,11 @@ async def send_post(user_story, embed, new_thread, new_description=None):
                 except discord.Forbidden:
                     print('Forum Post created in Discord...'
                           '(Could not pin message - Missing Manage Messages permission)')
-                return
+
+                # Post the change embed in the new thread
+                if embed:
+                    await thread_with_message.thread.send(embed=embed)
+                    print('Change embed posted in new thread...')
         else:
             print('Forum Channel not found...')
     except (discord.HTTPException, discord.Forbidden, discord.NotFound) as e:
