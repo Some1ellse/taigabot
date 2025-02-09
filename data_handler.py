@@ -11,6 +11,11 @@ def process_webhook(data):
     parsed_data = []
     print("Processing Started")
     print(data)
+    print(data['data'])
+    if data['data']['test']:
+        test = "Test Webhook - Ignoring"
+        print("Test Webhook - Ignoring")
+        return test
     change = data.get('change', {})
     diff = change.get('diff', {})
     tags = diff.get('tags', {}) # pylint: disable=unused-variable
@@ -30,14 +35,14 @@ def process_webhook(data):
             )
     color = None
     description = ''
-    embed_title = None
-    embed_description = None
-    embed_field1_name = None
-    embed_field2_name = None
-    embed_field1_value = None
-    embed_field2_value = None
-    embed_field1_inline = None
-    embed_field2_inline = None
+    embed_title = ''
+    embed_description = ''
+    embed_field1_name = ''
+    embed_field2_name = ''
+    embed_field1_value = ''
+    embed_field2_value = ''
+    embed_field1_inline = ''
+    embed_field2_inline = ''
     item_url = data['data']['permalink']
     new_description = None
     new_status = None

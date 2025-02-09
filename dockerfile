@@ -10,4 +10,4 @@ COPY ./requirements.txt /data/requirements.txt
 
 RUN pip install -r /data/requirements.txt
 
-CMD ["python", "./main.py", "--host", "0.0.0.0", "--port", "5001"]
+CMD ["python", "./main.py", "--host", "0.0.0.0", "--port", "5000"]

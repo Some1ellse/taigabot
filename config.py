@@ -1,8 +1,9 @@
+"""Configuration for the TaigaBot"""
 import os
 from typing import Final
-from dotenv import load_dotenv
+#from dotenv import load_dotenv
 
-load_dotenv()
+#load_dotenv()
 
 # Discord configuration
 DISCORD_TOKEN: Final[str] = os.environ['DISCORD_TOKEN']
@@ -15,9 +16,11 @@ TAIGA_AUTH_TOKEN: Final[str] = os.environ['TAIGA_AUTH_TOKEN']
 
 # Webhook configuration
 SECRET_KEY: Final[str] = os.environ['SECRET_KEY']
+WEBHOOK_ROUTE: Final[str] = os.getenv('WEBHOOK_ROUTE', '/webhook')
 
 # Validate required environment variables
 def validate_config():
+    """validate_config"""
     if not TAIGA_AUTH_TOKEN:
         raise ValueError("TAIGA_AUTH_TOKEN must be set in .env file")
     if not DISCORD_TOKEN:

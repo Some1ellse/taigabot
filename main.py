@@ -11,7 +11,7 @@ from discord import Intents, Client
 from flask import Flask, request, abort
 from waitress import serve
 from data_handler import process_webhook, embed_builder, thread_builder
-from config import DISCORD_TOKEN as TOKEN, CHANNEL_ID, FORUM_ID, SECRET_KEY
+from config import DISCORD_TOKEN as TOKEN, CHANNEL_ID, FORUM_ID, SECRET_KEY, WEBHOOK_ROUTE
 
 # Create a Flask app
 app = Flask(__name__)
@@ -22,7 +22,7 @@ client: Client = Client(intents=intents)
 
 
 # Webhook listener
-@app.route('/webhook', methods=['POST'])
+@app.route(WEBHOOK_ROUTE or '/webhook', methods=['POST'])
 def respond():
     """Catch headers and payload, verify signature and pass payload along if verified"""
     headers = dict(request.headers)
@@ -35,6 +35,8 @@ def respond():
     if valid:
         print("Attempting to process webhook...")
         processed_data = process_webhook(payload)
+        if processed_data == 'Test Webhook - Ignoring':
+            return '', 200
         print("Attempting to build embed")
         embed = embed_builder(processed_data)
         print("Attempting to build thread")
@@ -63,7 +65,7 @@ def verify_signature(key, data):
 
 def run_flask():
     """Run the Flask app"""
-    serve(app, host='0.0.0.0', port=5001)
+    serve(app, host='0.0.0.0', port=5000)
 
 # MESSAGE FUNCTIONALITY
 
