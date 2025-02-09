@@ -13,7 +13,7 @@ def process_webhook(data):
     print(data)
     change = data.get('change', {})
     diff = change.get('diff', {})
-    tags = diff.get('tags', {}) #noqa: F841
+    tags = diff.get('tags', {}) # pylint: disable=unused-variable
 
     if data['type'] != 'userstory' and data['type'] != 'task' and data['type'] != 'issue':
         return
