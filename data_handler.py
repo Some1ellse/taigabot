@@ -114,6 +114,14 @@ def process_webhook(data):
                 embed_field2_value = diff['status']['to']
                 embed_field1_inline = True
                 embed_field2_inline = True
+            elif isinstance(diff, dict) and 'swimlane' in diff:
+                embed_title = "The swimlane was changed"
+                embed_field1_name = "From"
+                embed_field2_name = "To"
+                embed_field1_value = diff['swimlane']['from']
+                embed_field2_value = diff['swimlane']['to']
+                embed_field1_inline = True
+                embed_field2_inline = True
 
 #        if payload_action == 'change' and data['change']['diff']:
 #            lines.append(f"    - **__Change:__** {data['change']['diff']}")
