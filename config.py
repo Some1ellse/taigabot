@@ -11,7 +11,7 @@ CHANNEL_ID: Final[int] = int(os.environ['CHANNEL_ID'])
 FORUM_ID: Final[int] = int(os.environ['FORUM_ID'])
 
 # Taiga configuration
-TAIGA_BASE_URL: Final[str] = os.getenv('TAIGA_BASE_URL', 'https://api.taiga.io')
+TAIGA_BASE_URL: Final[str] = os.environ['TAIGA_BASE_URL']
 TAIGA_AUTH_TOKEN: Final[str] = os.environ['TAIGA_AUTH_TOKEN']
 
 # Webhook configuration
