@@ -1,7 +1,9 @@
-import discord
+"""
+Data handler for Taiga webhooks
+"""
 import datetime
+import discord
 from taiga_api import get_user_story_history
-from config import TAIGA_AUTH_TOKEN , TAIGA_BASE_URL
 
 def process_webhook(data):
     """Process webhook data into strings to send to bot"""
@@ -18,10 +20,14 @@ def process_webhook(data):
 
     author = data['by']['full_name']
     author_url = data['by']['permalink']
-    if data['by']['photo'] != None:
+    if data['by']['photo'] is not None:
         author_icon_url = data['by']['photo']
     else:
-        author_icon_url = "https://pm.ks-webserver.com/v-1721729942015/images/user-avatars/user-avatar-01.png"
+        author_icon_url = (
+            "https://pm.ks-webserver.com/v-1721729942015"
+            "/images/user-avatars/user-avatar-01.png"
+            )
+    color = None
     description = ''
     embed_title = None
     embed_description = None
@@ -37,17 +43,20 @@ def process_webhook(data):
     old_status = None
     payload_action = data['action']
     payload_type = data['type']
-    if data['data']['project']['logo_big_url'] != None:
+    if data['data']['project']['logo_big_url'] is not None:
         thumbnail_url = data['data']['project']['logo_big_url']
     else:
-        thumbnail_url = "https://pm.ks-webserver.com/v-1721729942015/images/project-logos/project-logo-01.png"
-    
+        thumbnail_url = (
+            "https://pm.ks-webserver.com/v-1721729942015"
+            "/images/project-logos/project-logo-01.png"
+            )
+
     story_url = data['data']['permalink']
     ticket_number = story_url.split('/')[-1]
     user_story = '#' + ticket_number + ' ' + data['data']['subject']
     print("All variables set")
 
-    
+
     if payload_action == 'create':
         color = discord.Color.green()
     elif payload_action == 'change':
@@ -56,35 +65,40 @@ def process_webhook(data):
         color = discord.Color.red()
     print("Color set")
 
-
-#    if isinstance(diff, dict) and 'kanban_order' in diff:
-#        del diff['kanban_order']
-#    if isinstance(tags, dict) and 'sprint_order' in tags:
-#        del tags['sprint_order']
-#
-#    lines = [
-#        f'A **{data['type']}** was **{data['action']}d** by [{data['by']['full_name']}](<{data['by']['permalink']}>) on {time}', # NOQA
-#        f'- **__Project:__** [{data['data']['project']['name']}](<{data['data']['project']['permalink']}>)',
-#    ]
     if payload_type == 'userstory':
         description = data['data']['description']
-        if payload_action == 'change' and data['change']['comment']:
-            if data['change']['comment'] is not None and data['change']['edit_comment_date'] is None and data['change']['delete_comment_date'] is None:
+        if payload_action == 'change' and 'comment' in change:
+            if (
+                change['comment'] is not None and
+                change['edit_comment_date'] is None and
+                change['delete_comment_date'] is None
+                ):
                 embed_title = "A comment was created"
-                embed_description = data['change']['comment']
+                embed_description = change['comment']
                 color = discord.Color.green()
-            elif data['change']['comment'] is not None and data['change']['edit_comment_date'] is not None and data['change']['delete_comment_date'] is None:
+            elif (
+                change['comment'] is not None and
+                change['edit_comment_date'] is not None and
+                change['delete_comment_date'] is None
+                ):
                 embed_title = "A comment was edited"
-                embed_description = data['change']['comment']
+                embed_description = change['comment']
                 color = discord.Color.blue()
-            elif data['change']['comment'] is not None and data['change']['edit_comment_date'] is None and data['change']['delete_comment_date'] is not None:
+            elif (
+                change['comment'] is not None and
+                change['edit_comment_date'] is None and
+                change['delete_comment_date'] is not None
+                ):
                 embed_title = "A comment was deleted"
-                embed_description = data['change']['comment']
+                embed_description = change['comment']
                 color = discord.Color.red()
         if payload_action == 'change' and diff:
             if isinstance(diff, dict) and 'description_diff' in diff:
                 if diff['description_diff'] == 'Check the history API for the exact diff':
-                    history = get_user_story_history(user_story_id=data['data']['id'], target_time=data['date'], time_threshold_ms=500)
+                    history = (
+                        get_user_story_history(user_story_id=data['data']['id'],
+                        target_time=data['date'], time_threshold_ms=500)
+                        )
                     if history is not None:
                         api_diff = history.get('diff', {})
                         if isinstance(api_diff, dict) and 'description' in api_diff:
@@ -118,7 +132,10 @@ def process_webhook(data):
 #        if payload_action == 'change' and data['change']['diff']:
 #            lines.append(f"    - **__Change:__** {data['change']['diff']}")
 
-    description = f"# [#{ticket_number}]({story_url}) Description\n{description if description is not None else ''}"
+    description = (
+        f"# [#{ticket_number}]({story_url}) Description\n"
+        f"{description if description is not None else ''}"
+        )
 
     parsed_data = {
         "action": payload_action,
@@ -156,16 +173,32 @@ def embed_builder(data):
         color=data['color'],
         timestamp=datetime.datetime.now(datetime.UTC),
     )
-    embed.set_author(name=data['author'], url=data['author_url'], icon_url=data['author_icon_url'])
+    embed.set_author(
+        name=data['author'],
+        url=data['author_url'],
+        icon_url=data['author_icon_url']
+        )
     embed.set_thumbnail(url=data['thumbnail_url'])
     if data['embed_field1_name']:
-        embed.add_field(name=data['embed_field1_name'], value=data['embed_field1_value'], inline=data['embed_field1_inline'])
+        embed.add_field(
+            name=data['embed_field1_name'],
+            value=data['embed_field1_value'],
+            inline=data['embed_field1_inline']
+            )
     if data['embed_field2_name']:
-        embed.add_field(name=data['embed_field2_name'], value=data['embed_field2_value'], inline=data['embed_field2_inline'])
-    embed.set_footer(text=data['user_story'], icon_url="https://taiga.io/media/images/Logo-text.width-140.png")
+        embed.add_field(
+            name=data['embed_field2_name'],
+            value=data['embed_field2_value'],
+            inline=data['embed_field2_inline']
+            )
+    embed.set_footer(
+        text=data['user_story'],
+        icon_url="https://taiga.io/media/images/Logo-text.width-140.png"
+        )
     return embed
 
 def thread_builder(data):
+    """ Build a thread from the provided data """
     thread = {
         "name": data['user_story'],
         "content": data['description'],

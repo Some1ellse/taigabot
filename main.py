@@ -10,7 +10,7 @@ import discord
 from discord import Intents, Client
 from flask import Flask, request, abort
 from waitress import serve
-from data_handler import *
+from data_handler import process_webhook, embed_builder, thread_builder
 from config import DISCORD_TOKEN as TOKEN, CHANNEL_ID, FORUM_ID, SECRET_KEY
 
 # Create a Flask app
@@ -33,12 +33,8 @@ def respond():
     data = json.dumps(payload)
     valid = verify_signature(SECRET_KEY, data) == signature
     if valid:
-        try:
-            print("Attempting to process webhook...")
-            processed_data = process_webhook(payload)
-        except Exception as e:
-            print(e)
-            abort(401)
+        print("Attempting to process webhook...")
+        processed_data = process_webhook(payload)
         print("Attempting to build embed")
         embed = embed_builder(processed_data)
         print("Attempting to build thread")
@@ -52,7 +48,7 @@ def respond():
         }
         if processed_data['new_description'] is not None:
             post_args['new_description'] = processed_data['new_description']
-        
+
         client.loop.create_task(send_post(**post_args))
         return '', 200
     else:
@@ -100,12 +96,13 @@ async def send_post(user_story, embed, new_thread, new_description=None):
                     await thread_with_message.message.pin()
                     print('Forum Post created and pinned in Discord...')
                 except discord.Forbidden:
-                    print('Forum Post created in Discord... (Could not pin message - Missing Manage Messages permission)')
+                    print('Forum Post created in Discord...'
+      '(Could not pin message - Missing Manage Messages permission)')
                 return
         else:
             print('Forum Channel not found...')
-    except Exception as e:
-        print(e)
+    except (discord.HTTPException, discord.Forbidden, discord.NotFound) as e:
+        print(f'Discord API error: {e}')
 
 
 
@@ -115,8 +112,8 @@ async def send_embed(embed_message):
         print('Sending Embed to Discord...')
         channel = client.get_channel(CHANNEL_ID)
         await channel.send(embed=embed_message)
-    except Exception as e:
-        print(e)
+    except (discord.HTTPException, discord.Forbidden, discord.NotFound) as e:
+        print(f'Discord API error: {e}')
 
 
 async def send_message(bot_message):
@@ -125,8 +122,8 @@ async def send_message(bot_message):
         print('Sending Message to Discord...')
         channel = client.get_channel(CHANNEL_ID)
         await channel.send(bot_message)
-    except Exception as e:
-        print(e)
+    except (discord.HTTPException, discord.Forbidden, discord.NotFound) as e:
+        print(f'Discord API error: {e}')
 
 
 # HANDLING THE STARTUP FOR BOT
