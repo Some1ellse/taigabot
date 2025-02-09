@@ -2,8 +2,9 @@
 Data handler for Taiga webhooks
 """
 import datetime
+import time
 import discord
-from taiga_api import get_user_story_history
+from taiga_api import get_user_story_history, get_user_story
 
 def process_webhook(data):
     """Process webhook data into strings to send to bot"""
@@ -123,22 +124,17 @@ def process_webhook(data):
                 embed_field1_inline = True
                 embed_field2_inline = True
 
-#        if payload_action == 'change' and data['change']['diff']:
-#            lines.append(f"    - **__Change:__** {data['change']['diff']}")
-
-    if payload_type == 'task':
-        description = data['data']['description']
-#        if payload_action == 'change' and data['change']['comment']:
-#            lines.append(f"    - **__Comment:__** {data['change']['comment']}")
-#        if payload_action == 'change' and data['change']['diff']:
-#            lines.append(f"    - **__Change:__** {data['change']['diff']}")
-
-    if payload_type == 'issue':
-        description = data['data']['description']
-#        if payload_action == 'change' and data['change']['comment']:
-#            lines.append(f"    - **__Comment:__** {data['change']['comment']}")
-#        if payload_action == 'change' and data['change']['diff']:
-#            lines.append(f"    - **__Change:__** {data['change']['diff']}")
+    if payload_action == 'create':
+        user_story_data = None
+        retries = 3
+        while user_story_data is None and retries > 0:
+            user_story_data = get_user_story(data['data']['id'])
+            if user_story_data is None and retries > 1:
+                print(f"Retrying fetch user story... {retries-1} attempts remaining")
+                time.sleep(3)
+            retries -= 1
+        print("User story fetched" if user_story_data else "Failed to fetch user story after 3 attempts")
+        print(user_story_data)
 
     description = (
         f"# [#{ticket_number}]({story_url}) Description\n"
