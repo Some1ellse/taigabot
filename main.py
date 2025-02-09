@@ -63,7 +63,7 @@ def verify_signature(key, data):
 
 def run_flask():
     """Run the Flask app"""
-    serve(app, host='0.0.0.0', port=5000)
+    serve(app, host='0.0.0.0', port=5001)
 
 # MESSAGE FUNCTIONALITY
 
