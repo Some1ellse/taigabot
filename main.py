@@ -44,7 +44,16 @@ def respond():
         print("Attempting to build thread")
         new_thread = thread_builder(processed_data)
         print("Attempting to send messages")
-        client.loop.create_task(send_post(processed_data['user_story'], embed, new_thread))
+        # Only include new_description if it exists
+        post_args = {
+            'user_story': processed_data['user_story'],
+            'embed': embed,
+            'new_thread': new_thread
+        }
+        if processed_data['new_description'] is not None:
+            post_args['new_description'] = processed_data['new_description']
+        
+        client.loop.create_task(send_post(**post_args))
         return '', 200
     else:
         abort(401)
@@ -62,7 +71,7 @@ def run_flask():
 
 # MESSAGE FUNCTIONALITY
 
-async def send_post(user_story, embed, new_thread):
+async def send_post(user_story, embed, new_thread, new_description=None):
     """Try to send provided message to the indicated forum via bot"""
     is_thread = False
     try:
@@ -72,6 +81,9 @@ async def send_post(user_story, embed, new_thread):
             for thread in channel.threads:
                 if thread.name.lower() == user_story.lower():
                     print('Attempting to update Forum Post...')
+                    if new_description is not None:
+                        async for message in thread.history(limit=1, oldest_first=True):
+                            await message.edit(content=new_description)
                     await thread.send(embed=embed)
                     print('Forum Post updated in Discord...')
                     is_thread = True
