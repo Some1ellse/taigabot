@@ -6,13 +6,39 @@ import time
 import discord
 from taiga_api import get_user_story_history, get_user_story
 
+def split_content(content, limit=1900):
+    """Split content into two parts if it exceeds Discord's limit
+    
+    Args:
+        content (str): The content to split
+        limit (int): Maximum length for the first part
+        
+    Returns:
+        tuple: (first_part, second_part) where second_part is None if no split needed
+    """
+    if len(content) <= limit:
+        return content, None
+
+    # Try to split at a newline near the middle
+    split_index = content.rfind('\n', 0, limit)
+    if split_index == -1:
+        # If no newline found, split at a space
+        split_index = content.rfind(' ', 0, limit)
+        if split_index == -1:
+            # If no space found, just split at the limit
+            split_index = limit
+
+    return content[:split_index], content[split_index:].lstrip()
+
+
 def process_webhook(data):
     """Process webhook data into strings to send to bot"""
     parsed_data = []
     print("Processing Started")
     print(data)
     print(data['data'])
-    if data['data']['test']:
+    data_test = data['data'].get('test', False)
+    if data_test:
         test = "Test Webhook - Ignoring"
         print("Test Webhook - Ignoring")
         return test
@@ -145,10 +171,22 @@ def process_webhook(data):
             )
         print(user_story_data)
 
-    description = (
+    # Check if description needs to be split
+    full_description = (
         f"# [#{ticket_number}]({story_url}) Description\n"
         f"{description if description is not None else ''}"
         )
+
+    is_split = False
+    first_part = None
+    second_part = None
+
+    if len(full_description) > 2000:
+        first_part, second_part = split_content(full_description)
+        is_split = True
+        description = first_part
+    else:
+        description = full_description
 
     parsed_data = {
         "action": payload_action,
@@ -164,6 +202,8 @@ def process_webhook(data):
         "embed_field1_inline": embed_field1_inline,
         "embed_field2_inline": embed_field2_inline,
         "embed_title": embed_title,
+        "is_split": is_split,
+        "second_part": adjust_markdown(second_part) if second_part else None,
         "embed_description": embed_description,
         "new_description": new_description,
         "new_status": new_status,

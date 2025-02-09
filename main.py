@@ -96,12 +96,24 @@ async def send_post(user_story, embed, new_thread, new_description=None):
                     auto_archive_duration=new_thread['auto_archive_duration'],
                     suppress_embeds=True
                 )
+
+                # If content was split, edit the message to include the second part
+                if new_thread.get('is_split') and new_thread.get('second_part'):
+                    await asyncio.sleep(1)  # Wait a moment for the thread to be fully created
+                    current_content = new_thread['content']
+                    await thread_with_message.message.edit(
+                        content=current_content +
+                        '\n\n' + 
+                        new_thread['second_part']
+                        )
+                    print('Message edited to append remaining content')
+
                 try:
                     await thread_with_message.message.pin()
                     print('Forum Post created and pinned in Discord...')
                 except discord.Forbidden:
                     print('Forum Post created in Discord...'
-      '(Could not pin message - Missing Manage Messages permission)')
+                          '(Could not pin message - Missing Manage Messages permission)')
                 return
         else:
             print('Forum Channel not found...')
