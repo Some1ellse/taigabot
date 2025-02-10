@@ -76,6 +76,8 @@ class TaigaAuth:
             )
             auth_data = auth_response.json()
             print("Token validation response: ", auth_response.status_code)
+            if auth_response.status_code != 200:
+                return False
             print(
                 f"Authenticated as: "
                 f"{auth_data.get('full_name_display', auth_data.get('username'))}"
