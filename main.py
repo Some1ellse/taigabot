@@ -10,7 +10,7 @@ import discord
 from discord import Intents, Client
 from flask import Flask, request, abort
 from waitress import serve
-from data_handler import process_webhook, embed_builder, thread_builder
+from Handlers.data_handler import process_webhook, embed_builder, thread_builder
 from config import DISCORD_TOKEN as TOKEN, CHANNEL_ID, FORUM_ID, SECRET_KEY, WEBHOOK_ROUTE
 
 # Create a Flask app
@@ -37,7 +37,10 @@ def respond():
         print("Attempting to process webhook...")
         processed_data = process_webhook(payload)
         if processed_data == 'Test Webhook - Ignoring':
+            print("Test Webhook - Ignoring")
             return '', 200
+        elif processed_data is None:
+            return '', 400
         print("Attempting to build embed")
         embed = embed_builder(processed_data)
         print("Attempting to build thread")
