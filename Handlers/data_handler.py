@@ -3,40 +3,24 @@ Data handler for Taiga webhooks
 """
 import datetime
 import time
+from pprint import pprint
 import discord
-from taiga_api import get_user_story_history, get_user_story
+from .taiga_api import get_user_story_history, get_user_story
 
-def split_content(content, limit=1900):
-    """Split content into two parts if it exceeds Discord's limit
-    
-    Args:
-        content (str): The content to split
-        limit (int): Maximum length for the first part
-        
-    Returns:
-        tuple: (first_part, second_part) where second_part is None if no split needed
-    """
-    if len(content) <= limit:
-        return content, None
-
-    # Try to split at a newline near the middle
-    split_index = content.rfind('\n', 0, limit)
-    if split_index == -1:
-        # If no newline found, split at a space
-        split_index = content.rfind(' ', 0, limit)
-        if split_index == -1:
-            # If no space found, just split at the limit
-            split_index = limit
-
-    return content[:split_index], content[split_index:].lstrip()
 
 
 def process_webhook(data):
     """Process webhook data into strings to send to bot"""
-    parsed_data = []
     print("Processing Started")
-    print(data)
-    print(data['data'])
+    parsed_data = []
+    pprint(data)
+
+    if isinstance(data, dict) and 'type' in data:
+        type = data['type']
+        if not type:
+            print("Malformed Webhook - Type not found")
+            return None
+
     data_test = data['data'].get('test', False)
     if data_test:
         test = "Test Webhook - Ignoring"
@@ -216,6 +200,7 @@ def process_webhook(data):
     print("Data has been processed")
     return parsed_data
 
+
 def embed_builder(data):
     """Build an embed for the provided data"""
     embed = None
@@ -249,6 +234,30 @@ def embed_builder(data):
         icon_url="https://taiga.io/media/images/Logo-text.width-140.png"
         )
     return embed
+
+def split_content(content, limit=1900):
+    """Split content into two parts if it exceeds Discord's limit
+    
+    Args:
+        content (str): The content to split
+        limit (int): Maximum length for the first part
+        
+    Returns:
+        tuple: (first_part, second_part) where second_part is None if no split needed
+    """
+    if len(content) <= limit:
+        return content, None
+
+    # Try to split at a newline near the middle
+    split_index = content.rfind('\n', 0, limit)
+    if split_index == -1:
+        # If no newline found, split at a space
+        split_index = content.rfind(' ', 0, limit)
+        if split_index == -1:
+            # If no space found, just split at the limit
+            split_index = limit
+
+    return content[:split_index], content[split_index:].lstrip()
 
 def thread_builder(data):
     """ Build a thread from the provided data """
