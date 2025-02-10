@@ -317,7 +317,8 @@ def userstory_handler(data):
                     if history is not None:
                         api_diff = history.get('diff', {})
                         if isinstance(api_diff, dict) and 'description' in api_diff:
-                            action_diff.append("The description was updated. Check pinned for new description!")
+                            action_diff.append("The description was updated. "
+                            "Check pinned for new description!")
                             description = api_diff['description'][1]
                             embed_color = discord.Color.blue()
                         else:
@@ -334,7 +335,11 @@ def userstory_handler(data):
                             to_from['status'] = status
                             to_from['status_old'] = status_old
                             embed_color = discord.Color.blue()
-            if action_diff[0] == "New Comment!" or action_diff[0] == "Comment Deleted!" or action_diff[0] == "Comment edited.":
+            if (
+                action_diff[0] == "New Comment!" or
+                action_diff[0] == "Comment Deleted!" or
+                action_diff[0] == "Comment edited."
+                ):
                 action_diff.append(data['change']['comment'])
 
 #    if len(action_diff) > 1:
