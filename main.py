@@ -11,7 +11,7 @@ import requests # pylint: disable=import-error # pyright: ignore[reportMissingMo
 from discord import Intents, Client
 from flask import Flask, request, abort
 from waitress import serve
-from Handlers.data_handler import process_webhook, embed_builder, thread_builder, forum_tags
+from Handlers.data_handler import process_webhook, forum_tags
 from Handlers.taiga_api_auth import taiga_auth
 from config import DISCORD_TOKEN as TOKEN, CHANNEL_ID, FORUM_ID, SECRET_KEY, WEBHOOK_ROUTE
 
@@ -52,25 +52,32 @@ def respond():
     payload = request.json
     if valid:
         print("Attempting to process webhook...")
-        processed_data = process_webhook(payload)
-        if processed_data == 'Test Webhook - Ignoring':
-            print("Test Webhook - Ignoring")
-            return '', 200
-        elif processed_data is None:
-            return '', 400
-        print("Attempting to build embed")
-        embed = embed_builder(processed_data)
-        print("Attempting to build thread")
-        new_thread = thread_builder(processed_data)
-        print("Attempting to send messages")
-        # Only include new_description if it exists
+        thread, embed, embed2, flags = process_webhook(payload)
+#        if processed_data == 'Test Webhook - Ignoring':
+#            print("Test Webhook - Ignoring")
+#            return '', 200
+#        elif processed_data is None:
+#            return '', 400
+        #print("Attempting to build embed")
+        #embed = embed_builder(processed_data)
+        #print("Attempting to build thread")
+        #new_thread = thread_builder(processed_data)
+        #print("Attempting to send messages")
+        # Only include description_new if it exists
+        print("thread:", thread)
+        print("embed:", embed)
+        print("embed2:", embed2)
+        print("flags:", flags)
         post_args = {
-            'user_story': processed_data['user_story'],
+            'user_story': flags['user_story'], # pylint: disable=invalid-sequence-index
             'embed': embed,
-            'new_thread': new_thread
+            'embed2': embed2,
+            'new_thread': thread,
+            'description_new': flags['description_new'], # pylint: disable=invalid-sequence-index
         }
-        if processed_data['new_description'] is not None:
-            post_args['new_description'] = processed_data['new_description']
+#        if isinstance(flags, dict):
+#            if 'description_new' in flags and flags['description_new'] is not None:
+#                post_args['description_new'] = flags['description_new']
 
         client.loop.create_task(send_post(**post_args))
         return '', 200
@@ -91,7 +98,7 @@ def run_flask():
 
 # MESSAGE FUNCTIONALITY
 
-async def send_post(user_story, embed, new_thread, new_description=None):
+async def send_post(user_story, embed, embed2, new_thread=None, description_new=None):
     """Try to send provided message to the indicated forum via bot"""
     is_thread = False
     try:
@@ -101,10 +108,25 @@ async def send_post(user_story, embed, new_thread, new_description=None):
             for thread in channel.threads:
                 if thread.name.lower() == user_story.lower():
                     print('Attempting to update Forum Post...')
-                    if new_description is not None:
+                    if description_new is not None:
                         async for message in thread.history(limit=1, oldest_first=True):
-                            await message.edit(content=new_description)
-                    await thread.send(embed=embed)
+                            await message.edit(content=new_thread['content'], suppress=True)
+                    try:
+                        messages = [message async for message in
+                        thread.history(limit=3, oldest_first=True)]
+                        if len(messages) >= 3:
+                            #first_message = messages[0]
+                            #print(f"Message type: {first_message.type}, Author: "
+                            #f"{first_message.author}, System: {first_message.is_system()}")
+                            await messages[2].edit(embed=embed2)
+                            await thread.send(embed=embed)
+                        else:
+                            await thread.send(embed=embed2)
+                            await asyncio.sleep(15)
+                            await thread.send(embed=embed)
+                    except discord.Forbidden as e:
+                        print(f"Forbidden error: {e}")
+                        #print(f"Message details: ID={first_message.id}, Type={first_message.type}")
                     print('Forum Post updated in Discord...')
                     is_thread = True
                     return
@@ -117,17 +139,6 @@ async def send_post(user_story, embed, new_thread, new_description=None):
                     suppress_embeds=True
                 )
 
-                # If content was split, edit the message to include the second part
-                if new_thread.get('is_split') and new_thread.get('second_part'):
-                    await asyncio.sleep(1)  # Wait a moment for the thread to be fully created
-                    current_content = new_thread['content']
-                    await thread_with_message.message.edit(
-                        content=current_content +
-                        '\n\n' + 
-                        new_thread['second_part']
-                        )
-                    print('Message edited to append remaining content')
-
                 try:
                     await thread_with_message.message.pin()
                     print('Forum Post created and pinned in Discord...')
@@ -135,8 +146,19 @@ async def send_post(user_story, embed, new_thread, new_description=None):
                     print('Forum Post created in Discord...'
                           '(Could not pin message - Missing Manage Messages permission)')
 
+                await thread_with_message.thread.send(embed=embed2)
+                print('Post status embed in new thread.')
+
+                try:
+                    await thread_with_message.message.pin()
+                    print('Status embed posted and pinned in Discord...')
+                except discord.Forbidden:
+                    print('Status embed created in Discord...'
+                          '(Could not pin message - Missing Manage Messages permission)')
+
                 # Post the change embed in the new thread
                 if embed:
+                    await asyncio.sleep(5)
                     await thread_with_message.thread.send(embed=embed)
                     print('Change embed posted in new thread...')
         else:
