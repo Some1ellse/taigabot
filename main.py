@@ -125,6 +125,7 @@ async def send_post(user_story, embed, embed2, new_thread=None, description_new=
                             #print(f"Message type: {first_message.type}, Author: "
                             #f"{first_message.author}, System: {first_message.is_system()}")
                             await messages[2].edit(embed=embed2)
+                            await messages[2].pin()
                             await thread.send(embed=embed)
                         else:
                             await thread.send(embed=embed2)
@@ -155,11 +156,11 @@ async def send_post(user_story, embed, embed2, new_thread=None, description_new=
                     print('Forum Post created in Discord...'
                           '(Could not pin message - Missing Manage Messages permission)')
 
-                await thread_with_message.thread.send(embed=embed2)
+                status_embed = await thread_with_message.thread.send(embed=embed2)
                 print('Post status embed in new thread.')
 
                 try:
-                    await thread_with_message.message.pin()
+                    await status_embed.pin()
                     print('Status embed posted and pinned in Discord...')
                 except discord.Forbidden:
                     print('Status embed created in Discord...'
@@ -197,7 +198,7 @@ async def get_forum_tags(forum_id: int):
 
     # Store in the dataclass forum_tags
     forum_tags.tags = tags_dict
-    print("Forum tags updated:", forum_tags.tags)
+    #print("Forum tags updated:", forum_tags.tags)
 
 
 async def update_forum_tags_periodically():
