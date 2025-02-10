@@ -32,34 +32,6 @@ class Userstory:
     story_id: int
     tags: dict #= field(default_factory=lambda: {"Swimlane": None, "Tags": []})
     title: dict #= field(default_factory=lambda: {"Plain": None, "Linked": None})
-    # TODO: Make sure methods work for updating all instance variables for existing user stories
-    def add_description(self, description):
-        """Function to add description"""
-        self.description = description
-
-    def add_status(self, current_status, status_old):
-        """Function to add status"""
-        self.status = {"Current": current_status, "Old": status_old}
-
-    def add_assigned(self, assigned):
-        """Function to add assigned"""
-        self.assigned = assigned
-
-    def add_due_date(self, due_date):
-        """Function to add due date"""
-        self.due_date = due_date
-
-    def add_blocker(self, blocked):
-        """Function to add blocker"""
-        self.blocked = blocked
-
-    def add_has_team_requirement(self, has_team_requirement):
-        """Function to add has team requirement"""
-        self.has_team_requirement = has_team_requirement
-
-    def add_has_client_requirement(self, has_client_requirement):
-        """Function to add has client requirement"""
-        self.has_client_requirement = has_client_requirement
 
 
 def process_webhook(data):
@@ -100,6 +72,10 @@ def userstory_handler(data):
     # Define variables
     # TODO: Play around with getting owner and setting them as the author of the original embed.
     # TODO: Assigned users and watchers.
+    # TODO: @ mention watchers and assignee's
+    # TODO: Update description emoji to match status' like closed or blocked.
+    # TODO: Implement deleteing user stories handling.
+    # TODO: Update blocker, Team Requirement, Client Requirement field text.
         # Need to build a database of user ID's and figure out discord @ing
     action_diff = []
     author = None                   # Check
@@ -361,7 +337,7 @@ def userstory_handler(data):
         "\n\n### Description Truncated. Log into Taiga to see full description."
         )
     else:
-        description = (":inbox_tray:\n\n" + full_description)
+        description = ":inbox_tray:\n\n" + full_description
 
     # TODO: Get Swimlane # Figureout Swimlane ID from name
         # Figure out Discrod tag ID from name # Match Swimlane ID to Discord tag ID
