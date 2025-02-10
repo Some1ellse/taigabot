@@ -7,14 +7,31 @@ import hmac
 import hashlib
 import asyncio
 import discord
+import requests # pylint: disable=import-error # pyright: ignore[reportMissingModuleSource]
 from discord import Intents, Client
 from flask import Flask, request, abort
 from waitress import serve
-from Handlers.data_handler import process_webhook, embed_builder, thread_builder
+from Handlers.data_handler import process_webhook, embed_builder, thread_builder, forum_tags
+from Handlers.taiga_api_auth import taiga_auth
 from config import DISCORD_TOKEN as TOKEN, CHANNEL_ID, FORUM_ID, SECRET_KEY, WEBHOOK_ROUTE
 
 # Create a Flask app
 app = Flask(__name__)
+
+def initialize_taiga_api():
+    """Initialize the Taiga API"""
+    print("Initializing Taiga API...")
+    try:
+        token = taiga_auth.get_token()
+        if token:
+            print("Taiga API initialized!")
+        else:
+            print("Failed to obtain authentication token!")
+            print("Ensure TAIGA_USERNAME and TAIGA_PASSWORD are set in the environment variables")
+    except (requests.RequestException, ValueError, KeyError) as e:
+        # Handle specific exceptions as e:
+        print(f"Error during authentication test: {e}")
+
 
 # Bot setup
 intents: Intents = Intents.default()
@@ -128,6 +145,28 @@ async def send_post(user_story, embed, new_thread, new_description=None):
         print(f'Discord API error: {e}')
 
 
+async def get_forum_tags(forum_id: int):
+    """Fetches available forum tags and stores them in a dataclass with a dictionary."""
+    forum = await client.fetch_channel(forum_id)  # Fetch the forum channel
+
+    if not isinstance(forum, discord.ForumChannel):
+        print("This is not a forum channel!")
+        return
+
+    # Create a dictionary {tag_name: tag_id}
+    tags_dict = {tag.name: tag.id for tag in forum.available_tags}
+
+    # Store in the dataclass forum_tags
+    forum_tags.tags = tags_dict
+    print("Forum tags updated:", forum_tags.tags)
+
+
+async def update_forum_tags_periodically():
+    """Updates forum tags every 5 minutes"""
+    while True:
+        await get_forum_tags(FORUM_ID)
+        await asyncio.sleep(300)  # Sleep for 5 minutes (300 seconds)
+
 
 async def send_embed(embed_message):
     """Try to send provided embed to the indicated channel via bot"""
@@ -154,6 +193,10 @@ async def send_message(bot_message):
 async def on_ready() -> None:
     """Print verification to console that bot is running"""
     print(f'{client.user} is now running')
+    # Initial tags fetch
+    await get_forum_tags(FORUM_ID)
+    # Start periodic updates
+    client.loop.create_task(update_forum_tags_periodically())
 
 
 # MAIN ENTRY POINT
@@ -167,4 +210,5 @@ if __name__ == '__main__':
     flask_thread = threading.Thread(target=run_flask)
     flask_thread.daemon = True
     flask_thread.start()
+    initialize_taiga_api()
     main()
