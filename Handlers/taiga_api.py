@@ -3,7 +3,7 @@ Handler for Taiga API calls
 """
 from datetime import datetime, timedelta
 import requests
-from config import TAIGA_BASE_URL, TAIGA_AUTH_TOKEN
+from ..config import TAIGA_BASE_URL, TAIGA_AUTH_TOKEN
 
 def get_user_story_history(user_story_id, target_time=None, time_threshold_ms=500, limit=5):
     """Get user story history from Taiga API"""
