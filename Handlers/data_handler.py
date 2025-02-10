@@ -335,12 +335,13 @@ def userstory_handler(data):
                             to_from['status'] = status
                             to_from['status_old'] = status_old
                             embed_color = discord.Color.blue()
-            if (
-                action_diff[0] == "New Comment!" or
-                action_diff[0] == "Comment Deleted!" or
-                action_diff[0] == "Comment edited."
-                ):
-                action_diff.append(data['change']['comment'])
+            if action_diff:
+                if (
+                    action_diff[0] == "New Comment!" or
+                    action_diff[0] == "Comment Deleted!" or
+                    action_diff[0] == "Comment edited."
+                    ):
+                    action_diff.append(data['change']['comment'])
 
 #    if len(action_diff) > 1:
 #        print("Multiple changes detected")
@@ -360,7 +361,7 @@ def userstory_handler(data):
         "\n\n### Description Truncated. Log into Taiga to see full description."
         )
     else:
-        description = full_description
+        description = (":inbox_tray:\n\n" + full_description)
 
     # TODO: Get Swimlane # Figureout Swimlane ID from name
         # Figure out Discrod tag ID from name # Match Swimlane ID to Discord tag ID
