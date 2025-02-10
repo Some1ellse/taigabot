@@ -2,8 +2,9 @@
 Handler for Taiga API calls
 """
 from datetime import datetime, timedelta
-import requests
-from ..config import TAIGA_BASE_URL, TAIGA_AUTH_TOKEN
+import requests # pylint: disable=import-error # pyright: ignore[reportMissingModuleSource]
+from config import TAIGA_BASE_URL
+from Handlers.taiga_api_auth import taiga_auth
 
 def get_user_story_history(user_story_id, target_time=None, time_threshold_ms=500, limit=5):
     """Get user story history from Taiga API"""
@@ -13,7 +14,7 @@ def get_user_story_history(user_story_id, target_time=None, time_threshold_ms=50
 
     # Set up headers with authentication
     headers = {
-        "Authorization": f"Bearer {TAIGA_AUTH_TOKEN}",
+        "Authorization": f"Bearer {taiga_auth.auth_token}",
         "Content-Type": "application/json"
     }
 
@@ -64,7 +65,7 @@ def get_user_story(user_story_id):
     """
     # Set up headers with authentication
     headers = {
-        "Authorization": f"Bearer {TAIGA_AUTH_TOKEN}",
+        "Authorization": f"Bearer {taiga_auth.auth_token}",
         "Content-Type": "application/json"
     }
 
@@ -73,6 +74,59 @@ def get_user_story(user_story_id):
 
     try:
         response = requests.get(story_url, headers=headers, timeout=30)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching user story: {e}")
+        return None
+
+def get_swimlane(swimlane_id):
+    """Get a swimlane by ID from Taiga API
+
+    Args:
+        swimlane_id (int): The ID of the swimlane
+
+    Returns:
+        dict: Response data if successful, None if failed
+    """
+    # Set up headers with authentication
+    headers = {
+        "Authorization": f"Bearer {taiga_auth.auth_token}",
+        "Content-Type": "application/json"
+    }
+
+    # Make request to get user story
+    url = f"{TAIGA_BASE_URL}/api/v1/swimlanes/{swimlane_id}"
+
+    try:
+        response = requests.get(url, headers=headers, timeout=30)
+        response.raise_for_status()
+        return response.json()
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching swimlane: {e}")
+        return None
+
+def generic_api_call(endpoint, data=None):
+    """Make a generic API call to Taiga API
+
+    Args:
+        endpoint (str): The endpoint to call
+        data (dict, optional): Data to send in the request
+
+    Returns:
+        dict: Response data if successful, None if failed
+    """
+    # Set up headers with authentication
+    headers = {
+        "Authorization": f"Bearer {taiga_auth.auth_token}",
+        "Content-Type": "application/json"
+    }
+
+    # Make request to get user story
+    url = f"{TAIGA_BASE_URL}{endpoint}"
+
+    try:
+        response = requests.get(url, headers=headers, json=data, timeout=30)
         response.raise_for_status()
         return response.json()
     except requests.exceptions.RequestException as e:
