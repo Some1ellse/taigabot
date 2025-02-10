@@ -1,9 +1,9 @@
 """Configuration for the TaigaBot"""
 import os
 from typing import Final
-#from dotenv import load_dotenv
+from dotenv import load_dotenv # pylint: disable=import-error
 
-#load_dotenv()
+load_dotenv()
 
 # Discord configuration
 DISCORD_TOKEN: Final[str] = os.environ['DISCORD_TOKEN']
