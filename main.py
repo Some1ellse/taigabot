@@ -35,6 +35,7 @@ def initialize_taiga_api():
 
 # Bot setup
 intents: Intents = Intents.default()
+intents.members = True
 client: Client = Client(intents=intents)
 
 
@@ -104,10 +105,15 @@ async def send_post(user_story, embed, embed2, new_thread=None, description_new=
     try:
         print('Sending Forum Post to Discord...')
         channel = client.get_channel(FORUM_ID)
+        # Get the applied tags from the new_thread if they exist
+        tag_ids = new_thread.get('applied_tags', [])
+        # Convert tag IDs to actual forum tag objects
+        applied_tags = [tag for tag in channel.available_tags if tag.id in tag_ids]
         if isinstance(channel, discord.ForumChannel):
             for thread in channel.threads:
                 if thread.name.lower() == user_story.lower():
                     print('Attempting to update Forum Post...')
+                    await thread.edit(applied_tags=applied_tags)
                     if description_new is not None:
                         async for message in thread.history(limit=1, oldest_first=True):
                             await message.edit(content=new_thread['content'], suppress=True)
@@ -122,7 +128,7 @@ async def send_post(user_story, embed, embed2, new_thread=None, description_new=
                             await thread.send(embed=embed)
                         else:
                             await thread.send(embed=embed2)
-                            await asyncio.sleep(15)
+                            await asyncio.sleep(5)
                             await thread.send(embed=embed)
                     except discord.Forbidden as e:
                         print(f"Forbidden error: {e}")
@@ -132,10 +138,13 @@ async def send_post(user_story, embed, embed2, new_thread=None, description_new=
                     return
             if not is_thread:
                 print('Creating new Forum Post...')
+                print(applied_tags)
+                print(type(applied_tags))
                 thread_with_message = await channel.create_thread(
                     name=new_thread['name'],
                     content=new_thread['content'],
                     auto_archive_duration=new_thread['auto_archive_duration'],
+                    applied_tags=applied_tags,
                     suppress_embeds=True
                 )
 
@@ -166,6 +175,14 @@ async def send_post(user_story, embed, embed2, new_thread=None, description_new=
     except (discord.HTTPException, discord.Forbidden, discord.NotFound) as e:
         print(f'Discord API error: {e}')
 
+async def get_members(forum_id: int):
+    """Fetches all members of a guild and stores them in a list."""
+    channel = await client.fetch_channel(forum_id)
+    members = []
+    async for member in channel.guild.fetch_members():
+        members.append(member)
+    print("Members fetched:", [member.name for member in members])
+    return
 
 async def get_forum_tags(forum_id: int):
     """Fetches available forum tags and stores them in a dataclass with a dictionary."""
@@ -219,6 +236,7 @@ async def on_ready() -> None:
     await get_forum_tags(FORUM_ID)
     # Start periodic updates
     client.loop.create_task(update_forum_tags_periodically())
+    #client.loop.create_task(get_members(FORUM_ID))
 
 
 # MAIN ENTRY POINT

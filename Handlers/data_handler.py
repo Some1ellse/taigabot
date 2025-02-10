@@ -74,7 +74,7 @@ def process_webhook(data):
         test = "Test Webhook - Ignoring"
         print("Test Webhook - Ignoring")
         return test
-    
+
     print("")
     print("Determinting payload type...")
     if isinstance(data, dict) and 'type' in data:
@@ -125,6 +125,7 @@ def userstory_handler(data):
     status_old = None               # Check
     story_id = None                 # Check
     swimlane = None                 # Check
+    swimlane_id = None              # Check
     tags = None                     # Check
     thread = None                   # Check
     title = None                    # Check
@@ -132,6 +133,30 @@ def userstory_handler(data):
     title_plain = None              # Check
     to_from = {}
     thumbnail_url = None            # Check
+
+
+    # Initial API call to catch pre-existing objects.
+    if isinstance(data, dict) and 'data' in data:
+        sub_data = data['data']
+        if isinstance(sub_data, dict) and 'id' in sub_data:
+            if sub_data['id']:
+                story_id = sub_data['id']
+
+    api_data = None
+    retries = 3
+    while api_data is None and retries > 0:
+        api_data = get_user_story(data['data']['id'])
+        if api_data is None and retries > 1:
+            print(f"Retrying fetch user story... {retries-1} attempts remaining")
+            time.sleep(1)
+        else:
+            print("User Story Fetched")
+            if isinstance(api_data, dict) and 'swimlane' in api_data:
+                swimlane_id = api_data['swimlane']
+                api_data = get_swimlane(swimlane_id)
+                swimlane = api_data['name']
+                print(f"Swimlane: {swimlane}")
+        retries -= 1
 
     if action == 'create' or action == 'change':
         # Get Title
@@ -247,6 +272,7 @@ def userstory_handler(data):
                         swimlane_id = api_data['swimlane']
                         api_data = get_swimlane(swimlane_id)
                         swimlane = api_data['name']
+                        print(f"Swimlane: {swimlane}")
                 retries -= 1
 
         if action == 'change':
@@ -271,7 +297,6 @@ def userstory_handler(data):
                         embed_color = discord.Color.blue()
                     elif (
                         change['comment'] is not None and
-                        change['edit_comment_date'] is None and
                         change['delete_comment_date'] is not None
                         ):
                         action_diff.append("Comment Deleted!")
@@ -352,14 +377,29 @@ def userstory_handler(data):
 #    print("User Story Built")
 #    pprint(userstory)
 
-    if (action == 'create') or (action == 'change' and action_diff[0] == "The description was updated. Check pinned for new description!"):
-        print("Description update properly detected")
-        description_new = True
-        thread = {
-        "name": title_plain,
-        "content": description,
-        "auto_archive_duration": 4320
-    }
+    if swimlane:
+        swimlane_id = forum_tags.tags[swimlane]
+    else:
+        swimlane_id = None
+
+    if (action == 'create') or (action == 'change'):
+        if action_diff[0] == "The description was updated. Check pinned for new description!":
+            description_new = True
+        if not description:
+            description = "No description provided."
+        if swimlane_id:
+            thread = {
+            "name": title_plain,
+            "content": description,
+            "applied_tags": [swimlane_id],
+            "auto_archive_duration": 4320
+            }
+        else:
+            thread = {
+            "name": title_plain,
+            "content": description,
+            "auto_archive_duration": 4320
+            }
     if description_second_part:
         thread['description_second_part'] = description_second_part
 
@@ -369,6 +409,10 @@ def userstory_handler(data):
         flags['description_new'] = description_new
     else:
         flags['description_new'] = None
+    if swimlane_id:
+        flags['swimlane'] = swimlane_id
+    else:
+        flags['swimlane'] = None
 
     if action != 'create':
         embed = discord.Embed(
@@ -383,11 +427,17 @@ def userstory_handler(data):
             value='-',
             inline=False
             )
-        embed.add_field(
-            name='',
-            value=action_diff[1],
-            inline=False
-            )
+        if len(action_diff) > 1:
+            embed.add_field(
+                name='',
+                value=action_diff[1],
+                inline=False
+                )
+#            embed.add_field(
+#                name='',
+#                value=action_diff[1],
+#                inline=False
+#                )
         embed.set_author(
             name=author,
             url=author_url,
@@ -397,12 +447,12 @@ def userstory_handler(data):
         if to_from:
             embed.add_field(
                 name="From",
-                value=to_from['status'],
+                value=to_from['status_old'],
                 inline=True
                 )
             embed.add_field(
                 name="To",
-                value=to_from['status_old'],
+                value=to_from['status'],
                 inline=True
                 )
         embed.set_footer(
@@ -412,7 +462,7 @@ def userstory_handler(data):
 
     embed2 = discord.Embed(
         title=title_plain,
-        description='',
+        description='Current Stauts (Always Updated)',
         url=link,
         color=discord.Color.purple(),
         timestamp=datetime.datetime.now(datetime.UTC),
