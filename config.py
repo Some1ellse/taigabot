@@ -1,7 +1,7 @@
 """Configuration for the TaigaBot"""
 import os
 from typing import Final
-from dotenv import load_dotenv # pylint: disable=import-error
+from dotenv import load_dotenv # pylint: disable=import-error # pyright: ignore[reportMissingImports]
 
 load_dotenv()
 
