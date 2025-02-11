@@ -98,8 +98,7 @@ def userstory_handler(data):
             if sub_data['id']:
                 story_id = sub_data['id']
 
-    api_data = get_user_story(data['data']['id'])
-    print("User Story Fetched")
+    api_data = get_user_story(story_id)
     if isinstance(api_data, dict) and 'swimlane' in api_data:
         swimlane_id = api_data['swimlane']
         api_data = get_swimlane(swimlane_id)
@@ -127,8 +126,6 @@ def userstory_handler(data):
                 else:
                     has_client_requirement = None
             if isinstance(sub_data, dict) and 'description' in sub_data:
-                print("Description field found")
-                print("Description: " + sub_data['description'])
                 description = sub_data['description']
             if isinstance(sub_data, dict) and 'due_date' in sub_data:
                 if sub_data['due_date']:
@@ -207,21 +204,13 @@ def userstory_handler(data):
         if action == 'create':
             action_diff.append("A new user story was created")
             embed_color = discord.Color.green()
+
+            api_data = get_user_story(story_id)
+            if isinstance(api_data, dict) and 'swimlane' in api_data:
+                swimlane_id = api_data['swimlane']
+                api_data = get_swimlane(swimlane_id)
+                swimlane = api_data['name']
             api_data = None
-            retries = 6
-            while api_data is None and retries > 0:
-                api_data = get_user_story(data['data']['id'])
-                if api_data is None and retries > 1:
-                    print(f"Retrying fetch user story... {retries-1} attempts remaining")
-                    time.sleep(5)
-                else:
-                    print("User Story Fetched")
-                    if isinstance(api_data, dict) and 'swimlane' in api_data:
-                        swimlane_id = api_data['swimlane']
-                        api_data = get_swimlane(swimlane_id)
-                        swimlane = api_data['name']
-                        print(f"Swimlane: {swimlane}")
-                retries -= 1
 
         if action == 'change':
             if isinstance(data, dict) and 'change' in data:
