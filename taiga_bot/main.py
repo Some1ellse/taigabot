@@ -66,7 +66,7 @@ def respond():
     if valid:
         print("Attempting to process webhook...")
         thread, embed, embed2, flags = process_webhook(payload)
-        if flags['is_test']:
+        if isinstance(flags, dict) and 'is_test' in flags and flags['is_test']:
             print("Test Webhook - Ignoring")
             return '', 200
         post_args = {
