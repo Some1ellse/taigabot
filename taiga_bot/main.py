@@ -69,13 +69,16 @@ def respond():
         if isinstance(flags, dict) and 'is_test' in flags and flags['is_test']:
             print("Test Webhook - Ignoring")
             return '', 200
+        if isinstance(flags, dict) and 'delete' in flags and flags['delete']:
+            client.loop.create_task(delete_post(flags['user_story']))
+            return '', 200
         post_args = {
             'user_story': flags['user_story'], # pylint: disable=invalid-sequence-index
             'embed': embed,
             'embed2': embed2,
             'new_thread': thread,
             'description_new': flags['description_new'], # pylint: disable=invalid-sequence-index
-        }
+            }
 
         client.loop.create_task(send_post(**post_args))
         return '', 200
@@ -95,6 +98,16 @@ def run_flask():
     serve(app, host='0.0.0.0', port=5000)
 
 # MESSAGE FUNCTIONALITY
+async def delete_post(user_story):
+    """Try to delete a post from the indicated forum via bot"""
+    print('Attempting to delete Forum Post...')
+    channel = client.get_channel(FORUM_ID)
+    if isinstance(channel, discord.ForumChannel):
+        for thread in channel.threads:
+            if thread.name.lower() == user_story.lower():
+                await thread.delete()
+                print('Forum Post deleted in Discord...')
+                return
 
 async def send_post(user_story, embed, embed2, new_thread=None, description_new=None):
     """Try to send provided message to the indicated forum via bot"""

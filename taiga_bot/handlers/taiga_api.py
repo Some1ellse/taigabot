@@ -116,20 +116,11 @@ def generic_api_call(url, retries=3):
         response = requests.get(url, headers=get_headers(), timeout=30)
         if response.status_code != 200:
             while retries > 0:
-                print(f"Taiga auth token: {taiga_auth.token}")
                 print(f"Retrying API call (attempt {3 - retries + 1})...")
                 response.status_code = None
                 response = requests.get(url, headers=get_headers(), timeout=30)
                 print(f"response.status_code: {response.status_code}")
-                if response.status_code == 401:
-                    try:
-                        auth_token = taiga_auth.get_token()
-                        taiga_auth.token = auth_token
-                        retries -= 1
-                    except (requests.RequestException, ValueError, KeyError) as e:
-                        print(f"Error with API token: {e}")
-                        retries -= 1
-                elif response.status_code != 200:
+                if response.status_code != 200:
                     retries -= 1
                 else:
                     return response.json()

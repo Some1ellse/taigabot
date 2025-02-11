@@ -63,7 +63,6 @@ def userstory_handler(data):
     blocked_reason = None
     description = None
     description_new = None
-    description_second_part = None
     due_date = None
     due_date_old = None
     due_date_reason = None
@@ -96,13 +95,29 @@ def userstory_handler(data):
         if isinstance(sub_data, dict) and 'id' in sub_data:
             if sub_data['id']:
                 story_id = sub_data['id']
+        if isinstance(sub_data, dict) and 'subject' in sub_data:
+            if sub_data['subject']:
+                title = sub_data['subject']
+            else:
+                print("Malformed Webhook - Subject not found")
+                return None
+        if isinstance(sub_data, dict) and 'permalink' in sub_data:
+            if sub_data['permalink']:
+                link = sub_data['permalink']
+            else:
+                print("Malformed Webhook - Permalink not found")
+                return None
 
-    api_data = get_user_story(story_id)
-    if isinstance(api_data, dict) and 'swimlane' in api_data:
-        swimlane_id = api_data['swimlane']
-        api_data = get_swimlane(swimlane_id)
-        swimlane = api_data['name']
-    api_data = None
+    ticket_number = link.split('/')[-1]
+    title_plain = f"#{ticket_number} {title}"
+
+    if data['action'] != 'delete':
+        api_data = get_user_story(story_id)
+        if isinstance(api_data, dict) and 'swimlane' in api_data:
+            swimlane_id = api_data['swimlane']
+            api_data = get_swimlane(swimlane_id)
+            swimlane = api_data['name']
+        api_data = None
 
     if action == 'create' or action == 'change':
         # Get Title
@@ -156,12 +171,6 @@ def userstory_handler(data):
                         "https://pm.ks-webserver.com/v-1721729942015"
                         "/images/user-avatars/user-avatar-01.png"
                         )
-            if isinstance(sub_data, dict) and 'permalink' in sub_data:
-                if sub_data['permalink']:
-                    link = sub_data['permalink']
-                else:
-                    print("Malformed Webhook - Link not found")
-                    return None
             if isinstance(sub_data, dict) and 'status' in sub_data:
                 if sub_data['status']:
                     if sub_data['status']['name']:
@@ -169,12 +178,6 @@ def userstory_handler(data):
                     else:
                         print("Malformed Webhook - Status not found")
                         return None
-            if isinstance(sub_data, dict) and 'subject' in sub_data:
-                if sub_data['subject']:
-                    title = sub_data['subject']
-                else:
-                    print("Malformed Webhook - Subject not found")
-                    return None
             if isinstance(sub_data, dict) and 'tags' in sub_data:
                 if sub_data['tags']:
                     tags = sub_data['tags']
@@ -203,11 +206,6 @@ def userstory_handler(data):
                     "https://pm.ks-webserver.com/v-1721729942015"
                     "/images/user-avatars/user-avatar-01.png"
                     )
-
-        title = data['data']['subject']
-        story_url = data['data']['permalink']
-        ticket_number = story_url.split('/')[-1]
-        title_plain = f"#{ticket_number} {title}"
 
         if action == 'create':
             action_diff.append("A new user story was created")
@@ -246,6 +244,15 @@ def userstory_handler(data):
                         embed_color = discord.Color.red()
                 if isinstance(change, dict) and 'diff' in change:
                     diff = change['diff']
+                    if isinstance(diff, dict) and 'is_blocked' in diff:
+                        if isinstance(diff, dict) and 'from' in diff['is_blocked']:
+                            action_diff.append("The blocked status was updated")
+                            to_from['to'] = blocked
+                            embed_color = discord.Color.blue()
+                            if diff['is_blocked']['from']:
+                                to_from['from'] = "Yes"
+                            else:
+                                to_from['from'] = "No"
                     if isinstance(diff, dict) and 'client_requirement' in diff:
                         if isinstance(diff, dict) and 'from' in diff['client_requirement']:
                             action_diff.append("The client requirement was updated")
@@ -302,22 +309,22 @@ def userstory_handler(data):
                     ):
                     action_diff.append(data['change']['comment'])
 
-    full_description = adjust_markdown(description)
-
-    if len(full_description) > 2000:
-        description = full_description[:1100]
-        description = (":inbox_tray:\n\n" + description +
-        "\n\n### Description Truncated. Log into Taiga to see full description."
-        )
-    else:
-        description = ":inbox_tray:\n\n" + full_description
-
-    if swimlane:
-        swimlane_id = forum_tags.tags[swimlane]
-    else:
-        swimlane_id = None
 
     if (action == 'create') or (action == 'change'):
+        full_description = adjust_markdown(description)
+
+        if len(full_description) > 2000:
+            description = full_description[:1100]
+            description = (":inbox_tray:\n\n" + description +
+            "\n\n### Description Truncated. Log into Taiga to see full description."
+            )
+        else:
+            description = ":inbox_tray:\n\n" + full_description
+
+        if swimlane:
+            swimlane_id = forum_tags.tags[swimlane]
+        else:
+            swimlane_id = None
         if action_diff[0] == "The description was updated. Check pinned for new description!":
             description_new = True
         if not description:
@@ -335,8 +342,6 @@ def userstory_handler(data):
             "content": description,
             "auto_archive_duration": 4320
             }
-    if description_second_part:
-        thread['description_second_part'] = description_second_part
 
     flags = {}
     flags['user_story'] = title_plain
@@ -348,8 +353,10 @@ def userstory_handler(data):
         flags['swimlane'] = swimlane_id
     else:
         flags['swimlane'] = None
+    if action == 'delete':
+        flags['delete'] = True
 
-    if action != 'create':
+    if action == 'change':
         embed = discord.Embed(
             title=title_plain,
             description='',
