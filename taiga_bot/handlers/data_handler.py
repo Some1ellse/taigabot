@@ -51,7 +51,6 @@ def userstory_handler(data):
     # TODO: Assigned users and watchers.
     # TODO: @ mention watchers and assignee's
     # TODO: Update description emoji to match status' like closed or blocked.
-    # TODO: Implement deleteing user stories handling.
         # Need to build a database of user ID's and figure out discord @ing
     action_diff = []
     api_data = None
