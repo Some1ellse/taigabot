@@ -7,7 +7,6 @@ load_dotenv()
 
 # Discord configuration
 DISCORD_TOKEN: Final[str] = os.environ['DISCORD_TOKEN']
-CHANNEL_ID: Final[int] = int(os.environ['CHANNEL_ID'])
 FORUM_ID: Final[int] = int(os.environ['FORUM_ID'])
 
 # Taiga configuration
@@ -33,8 +32,6 @@ def validate_config():
         raise ValueError("DISCORD_TOKEN must be set in environment")
     if not SECRET_KEY:
         raise ValueError("SECRET_KEY must be set in environment")
-    if not CHANNEL_ID:
-        raise ValueError("CHANNEL_ID must be set in environment")
     if not FORUM_ID:
         raise ValueError("FORUM_ID must be set in environment")
 
