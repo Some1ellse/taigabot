@@ -78,13 +78,13 @@ class TaigaAuth:
                 timeout=30
             )
             auth_data = auth_response.json()
-            print("API token validation response: ", auth_response.status_code)
+            #print("API token validation response: ", auth_response.status_code)
             if auth_response.status_code != 200:
                 return False
-            print(
-                f"Authenticated as: "
-                f"{auth_data.get('full_name_display', auth_data.get('username'))}"
-                )
+            #print(
+            #    f"Authenticated as: "
+            #    f"{auth_data.get('full_name_display', auth_data.get('username'))}"
+            #    )
             return True #auth_response.status_code == 200
         except requests.exceptions.RequestException:
             return False
@@ -94,7 +94,7 @@ class TaigaAuth:
         # If we have a token, verify it's still valid with the API
         if self.token:
             if self._validate_token():
-                print("Token is valid, keeping it!")
+                print("API token is valid, keeping it!")
                 return self.token
             print("API token is missing, invalid or expired, refreshing...")
 

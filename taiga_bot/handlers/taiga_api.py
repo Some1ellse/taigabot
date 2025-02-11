@@ -111,6 +111,7 @@ def generic_api_call(url, retries=3):
     Returns:
         dict: Response data if successful, None if failed
     """
+    print(f"\nMaking API call: {url}")
     try:
         response = requests.get(url, headers=get_headers(), timeout=30)
         if response.status_code != 200:

@@ -16,29 +16,11 @@ class ForumTags:
 #Singleton instance for global use
 forum_tags = ForumTags(tags={})
 
-@dataclass
-class Userstory:
-    """Dataclass for user story data"""
-    action: dict
-    assigned: str
-    blocked: dict #= field(default_factory=lambda: {"Is Blocked": None, "Reason": None})
-    description: dict
-    due_date: dict #= field(default_factory=lambda: {"Date": None, "Reason": None})
-    has_client_requirement: bool
-    has_team_requirement: bool
-    link: str
-    milestone: str
-    status: dict #= field(default_factory=lambda: {"Current": None, "Old": None})
-    story_id: int
-    tags: dict #= field(default_factory=lambda: {"Swimlane": None, "Tags": []})
-    title: dict #= field(default_factory=lambda: {"Plain": None, "Linked": None})
-
-
 def process_webhook(data):
     """Process webhook data into strings to send to bot"""
     is_test = False
 
-    print("Processing Started on...")
+    print("\n\nProcessing Started on...")
     pprint(data)
 
     is_test = data['data'].get('test', False)
@@ -47,22 +29,20 @@ def process_webhook(data):
         print("Test Webhook - Ignoring")
         return test
 
-    print("")
-    print("Determinting payload type...")
+    print("\n\nDeterminting payload type...")
     if isinstance(data, dict) and 'type' in data:
         payload_type = data['type']
         if not payload_type:
             print("Malformed Webhook - Type not found")
             return None
         if payload_type == 'userstory':
-            print("Type is user story")
             processed_data = userstory_handler(data)
             return processed_data
     return
 
 def userstory_handler(data):
     """Handle a user story webhook"""
-    print("Userstory Webhook Received, Processing...")
+    print("\n\nUserstory Webhook Received, Processing...")
     action = None
     if isinstance(data, dict) and 'action' in data:
         action = data['action']
@@ -78,6 +58,7 @@ def userstory_handler(data):
     # TODO: Update blocker, Team Requirement, Client Requirement field text.
         # Need to build a database of user ID's and figure out discord @ing
     action_diff = []
+    api_data = None
     author = None                   # Check
     author_url = None               # Check
     author_icon_url = None          # Check
@@ -118,21 +99,13 @@ def userstory_handler(data):
             if sub_data['id']:
                 story_id = sub_data['id']
 
+    api_data = get_user_story(data['data']['id'])
+    print("User Story Fetched")
+    if isinstance(api_data, dict) and 'swimlane' in api_data:
+        swimlane_id = api_data['swimlane']
+        api_data = get_swimlane(swimlane_id)
+        swimlane = api_data['name']
     api_data = None
-    retries = 3
-    while api_data is None and retries > 0:
-        api_data = get_user_story(data['data']['id'])
-        if api_data is None and retries > 1:
-            print(f"Retrying fetch user story... {retries-1} attempts remaining")
-            time.sleep(1)
-        else:
-            print("User Story Fetched")
-            if isinstance(api_data, dict) and 'swimlane' in api_data:
-                swimlane_id = api_data['swimlane']
-                api_data = get_swimlane(swimlane_id)
-                swimlane = api_data['name']
-                print(f"Swimlane: {swimlane}")
-        retries -= 1
 
     if action == 'create' or action == 'change':
         # Get Title
@@ -243,7 +216,6 @@ def userstory_handler(data):
                     time.sleep(5)
                 else:
                     print("User Story Fetched")
-                    #pprint(api_data)
                     if isinstance(api_data, dict) and 'swimlane' in api_data:
                         swimlane_id = api_data['swimlane']
                         api_data = get_swimlane(swimlane_id)
@@ -319,16 +291,6 @@ def userstory_handler(data):
                     ):
                     action_diff.append(data['change']['comment'])
 
-#    if len(action_diff) > 1:
-#        print("Multiple changes detected")
-#        action_diff = " & ".join(action_diff)
-#        print(action_diff)
-#    else:
-#        print("Single change detected")
-#        print(action_diff)
-
-#    full_description = adjust_markdown(
-#        f"# [#{ticket_number}]({story_url}) Description\n{description}")
     full_description = adjust_markdown(description)
 
     if len(full_description) > 2000:
@@ -338,26 +300,6 @@ def userstory_handler(data):
         )
     else:
         description = ":inbox_tray:\n\n" + full_description
-
-    # TODO: Get Swimlane # Figureout Swimlane ID from name
-        # Figure out Discrod tag ID from name # Match Swimlane ID to Discord tag ID
-#    userstory = Userstory(
-#        action={"Action": action, "Diffs": action_diff},
-#        assigned=assigned,
-#        blocked={"Is Blocked": blocked, "Reason": blocked_reason},
-#        description={"Description": description, "Description_second_part": second_part},
-#        due_date={"Date": due_date, "Reason": due_date_reason},
-#        has_client_requirement=has_client_requirement,
-#        has_team_requirement=has_team_requirement,
-#        link=link,
-#        milestone=milestone,
-#        status={"Current": status, "Old": status_old},
-#        story_id=story_id,
-#        tags={"Swimlane": swimlane, "Tags": tags},
-#        title={"Plain": title_plain, "Linked": title_linked}
-#    )
-#    print("User Story Built")
-#    pprint(userstory)
 
     if swimlane:
         swimlane_id = forum_tags.tags[swimlane]
