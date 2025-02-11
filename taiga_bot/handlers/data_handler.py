@@ -55,7 +55,6 @@ def userstory_handler(data):
     # TODO: @ mention watchers and assignee's
     # TODO: Update description emoji to match status' like closed or blocked.
     # TODO: Implement deleteing user stories handling.
-    # TODO: Update blocker, Team Requirement, Client Requirement field text.
         # Need to build a database of user ID's and figure out discord @ing
     action_diff = []
     api_data = None
@@ -123,10 +122,10 @@ def userstory_handler(data):
                 else:
                     blocked_reason = "No reason provided"
             if isinstance(sub_data, dict) and 'client_requirement' in sub_data:
-                if not sub_data['client_requirement']:
-                    has_client_requirement = False
+                if sub_data['client_requirement']:
+                    has_client_requirement = "Yes"
                 else:
-                    has_client_requirement = True
+                    has_client_requirement = None
             if isinstance(sub_data, dict) and 'description' in sub_data:
                 print("Description field found")
                 print("Description: " + sub_data['description'])
@@ -147,6 +146,7 @@ def userstory_handler(data):
                     blocked = True
                 else:
                     blocked = False
+                    blocked_reason = None
             if isinstance(sub_data, dict) and 'milestone' in sub_data:
                 if sub_data['milestone']:
                     milestone = sub_data['milestone']['name']
@@ -176,9 +176,9 @@ def userstory_handler(data):
                     tags = []
             if isinstance(sub_data, dict) and 'team_requirement' in sub_data:
                 if sub_data['team_requirement']:
-                    has_team_requirement = True
+                    has_team_requirement = "Yes"
                 else:
-                    has_team_requirement = False
+                    has_team_requirement = None
             if isinstance(sub_data, dict) and 'project' in sub_data:
                 if sub_data['project']['logo_big_url']:
                     thumbnail_url = sub_data['project']['logo_big_url']
@@ -294,7 +294,7 @@ def userstory_handler(data):
     full_description = adjust_markdown(description)
 
     if len(full_description) > 2000:
-        description = full_description[:1900]
+        description = full_description[:1000]
         description = (":inbox_tray:\n\n" + description +
         "\n\n### Description Truncated. Log into Taiga to see full description."
         )
@@ -418,22 +418,22 @@ def userstory_handler(data):
         inline=False
         )
     embed2.add_field(
-        name='Blocker',
+        name='Blocked',
         value=blocked_reason,
         inline=True
         )
     embed2.add_field(
-        name='Team Requirement',
+        name='Team Req.',
         value=has_team_requirement,
         inline=True
         )
     embed2.add_field(
-        name='Client Requirement',
+        name='Client Req.',
         value=has_client_requirement,
         inline=True
         )
     embed2.set_footer(
-        text=title_plain,
+        text='Powered by Taiga REST API | Coded by @Some1ellse',
         icon_url="https://taiga.io/media/images/Logo-text.width-140.png"
         )
 
