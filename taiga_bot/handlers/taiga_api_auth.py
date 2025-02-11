@@ -77,7 +77,7 @@ class TaigaAuth:
                 headers=auth_headers,
                 timeout=30
             )
-            auth_data = auth_response.json()
+            #auth_data = auth_response.json()
             #print("API token validation response: ", auth_response.status_code)
             if auth_response.status_code != 200:
                 return False
