@@ -221,8 +221,6 @@ def userstory_handler(data):
                         change['edit_comment_date'] is None and
                         change['delete_comment_date'] is None
                         ):
-                        print("Test change comment detection")
-                        print(change['comment'])
                         action_diff.append("New Comment!")
                         embed_color = discord.Color.green()
                     elif (
