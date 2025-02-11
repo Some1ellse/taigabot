@@ -55,39 +55,39 @@ def userstory_handler(data):
         # Need to build a database of user ID's and figure out discord @ing
     action_diff = []
     api_data = None
-    author = None                   # Check
-    author_url = None               # Check
-    author_icon_url = None          # Check
-    assigned = None                 # Check
-    blocked = None                  # Check
-    blocked_reason = None           # Check
-    description = None              # Check
-    description_new = None          # Check
-    description_second_part = None  # Check
-    due_date = None                 # Check
-    due_date_reason = None          # Check
+    author = None
+    author_url = None
+    author_icon_url = None
+    assigned = None
+    blocked = None # pylint: disable=unused-variable
+    blocked_reason = None
+    description = None
+    description_new = None
+    description_second_part = None
+    due_date = None
+    due_date_old = None
+    due_date_reason = None
     embed = None
     embed2 = None
     embed_color = None
-    has_team_requirement = None     # Check
-    has_client_requirement = None   # Check
-    history = None                  # Check
-    link = None                     # Check
-    milestone = None                # Check
-    owner = None                    
-    owner_url = None                
-    owner_icon_url = None           
-    status = None                   # Check
-    status_old = None               # Check
-    story_id = None                 # Check
-    swimlane = None                 # Check
-    swimlane_id = None              # Check
-    tags = None                     # Check
-    thread = None                   # Check
-    title = None                    # Check
-    title_plain = None              # Check
+    has_team_requirement = None
+    has_client_requirement = None
+    history = None
+    link = None
+    milestone = None
+    owner = None
+    owner_url = None
+    owner_icon_url = None
+    status = None
+    story_id = None
+    swimlane = None
+    swimlane_id = None
+    tags = None
+    thread = None
+    title = None
+    title_plain = None
     to_from = {}
-    thumbnail_url = None            # Check
+    thumbnail_url = None
 
 
     # Initial API call to catch pre-existing objects.
@@ -246,37 +246,53 @@ def userstory_handler(data):
                         embed_color = discord.Color.red()
                 if isinstance(change, dict) and 'diff' in change:
                     diff = change['diff']
+                    if isinstance(diff, dict) and 'client_requirement' in diff:
+                        if isinstance(diff, dict) and 'from' in diff['client_requirement']:
+                            action_diff.append("The client requirement was updated")
+                            to_from['to'] = has_client_requirement
+                            embed_color = discord.Color.blue()
+                            if diff['client_requirement']['from'] is True:
+                                to_from['from'] = "Yes"
+                            else:
+                                to_from['from'] = "None"
                     if isinstance(diff, dict) and 'description_diff' in diff:
                         if diff['description_diff'] == 'Check the history API for the exact diff':
-                            history_retries = 6
-                            while history is None and history_retries > 0:
-                                history = (
-                                get_user_story_history(user_story_id=data['data']['id'],
+                            history = get_user_story_history(user_story_id=data['data']['id'],
                                 target_time=data['date'], time_threshold_ms=500)
-                                )
-                                if history is not None:
-                                    break
-                                history_retries -= 1
-                    if history is not None:
-                        api_diff = history.get('diff', {})
-                        if isinstance(api_diff, dict) and 'description' in api_diff:
-                            action_diff.append("The description was updated. "
-                            "Check pinned for new description!")
-                            description = api_diff['description'][1]
-                            embed_color = discord.Color.blue()
-                        else:
-                            action_diff.append("Unknown Change was detected in the API")
-                            print("Unknown change detected in the API")
+                            if history is not None:
+                                api_diff = history.get('diff', {})
+                                if isinstance(api_diff, dict) and 'description' in api_diff:
+                                    action_diff.append("The description was updated. "
+                                    "Check pinned for new description!")
+                                    description = api_diff['description'][1]
+                                    embed_color = discord.Color.blue()
+                                else:
+                                    action_diff.append("Unknown Change was detected in the API")
+                                    print("Unknown change detected in the API")
+                    if isinstance(diff, dict) and 'due_date' in diff:
+                        if isinstance(diff, dict) and 'to' in diff['due_date']:
+                            due_date = diff['due_date']['to']
+                            to_from['from'] = diff['due_date']['from']
+                            to_from['to'] = due_date
+                            action_diff.append("The due date was changed.")
                     if isinstance(diff, dict) and 'swimlane' in diff:
                         if isinstance(diff, dict) and 'to' in diff['swimlane']:
                             swimlane = diff['swimlane']['to']
                             action_diff.append("The swimlane was updated")
                     if isinstance(diff, dict) and 'status' in diff:
                         if isinstance(diff, dict) and 'from' in diff['status']:
-                            status_old = diff['status']['from']
                             action_diff.append("The status was updated")
-                            to_from['status'] = status
-                            to_from['status_old'] = status_old
+                            to_from['to'] = status
+                            to_from['from'] = diff['status']['from']
+                            embed_color = discord.Color.blue()
+                    if isinstance(diff, dict) and 'team_requirement' in diff:
+                        if isinstance(diff, dict) and 'from' in diff['team_requirement']:
+                            action_diff.append("The team requirement was updated")
+                            to_from['to'] = has_team_requirement
+                            if diff['team_requirement']['from'] is True:
+                                to_from['from'] = "Yes"
+                            else:
+                                to_from['from'] = "None"
                             embed_color = discord.Color.blue()
             if action_diff:
                 if (
@@ -366,12 +382,12 @@ def userstory_handler(data):
         if to_from:
             embed.add_field(
                 name="From",
-                value=to_from['status_old'],
+                value=to_from['from'],
                 inline=True
                 )
             embed.add_field(
                 name="To",
-                value=to_from['status'],
+                value=to_from['to'],
                 inline=True
                 )
         embed.set_footer(
