@@ -48,7 +48,6 @@ def userstory_handler(data):
             print("Malformed Webhook - Action not found")
             return None
     # Define variables
-    # TODO: Play around with getting owner and setting them as the author of the original embed.
     # TODO: Assigned users and watchers.
     # TODO: @ mention watchers and assignee's
     # TODO: Update description emoji to match status' like closed or blocked.
@@ -75,6 +74,9 @@ def userstory_handler(data):
     history = None                  # Check
     link = None                     # Check
     milestone = None                # Check
+    owner = None                    
+    owner_url = None                
+    owner_icon_url = None           
     status = None                   # Check
     status_old = None               # Check
     story_id = None                 # Check
@@ -144,6 +146,16 @@ def userstory_handler(data):
             if isinstance(sub_data, dict) and 'milestone' in sub_data:
                 if sub_data['milestone']:
                     milestone = sub_data['milestone']['name']
+            if isinstance(sub_data, dict) and 'owner' in sub_data:
+                owner = sub_data['owner']['full_name']
+                owner_url = sub_data['owner']['permalink']
+                if sub_data['owner']['photo']:
+                    owner_icon_url = sub_data['owner']['photo']
+                else:
+                    owner_icon_url = (
+                        "https://pm.ks-webserver.com/v-1721729942015"
+                        "/images/user-avatars/user-avatar-01.png"
+                        )
             if isinstance(sub_data, dict) and 'permalink' in sub_data:
                 if sub_data['permalink']:
                     link = sub_data['permalink']
@@ -375,9 +387,9 @@ def userstory_handler(data):
         timestamp=datetime.datetime.now(datetime.UTC),
     )
     embed2.set_author(
-        name=author,
-        url=author_url,
-        icon_url=author_icon_url
+        name=owner,
+        url=owner_url,
+        icon_url=owner_icon_url
         )
     embed2.set_thumbnail(url=thumbnail_url)
     embed2.add_field(
