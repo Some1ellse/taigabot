@@ -1,19 +1,16 @@
 """Authentication handler for Taiga API"""
-import os
 from datetime import datetime, timedelta
 import requests # pylint: disable=import-error # pyright: ignore[reportMissingModuleSource]
-from dotenv import load_dotenv # pylint: disable=import-error # pyright: ignore[reportMissingImports]
+from ..config import TAIGA_BASE_URL, TAIGA_USERNAME, TAIGA_PASSWORD
 
-
-load_dotenv()
 
 class TaigaAuth:
     """Authentication handler for Taiga API"""
     def __init__(self):
-        self.base_url = os.getenv('TAIGA_BASE_URL', 'https://api.taiga.io')
-        self.username = os.getenv('TAIGA_USERNAME')
-        self.password = os.getenv('TAIGA_PASSWORD')
-        self.auth_token = os.getenv('TAIGA_AUTH_TOKEN')
+        self.base_url = TAIGA_BASE_URL
+        self.username = TAIGA_USERNAME
+        self.password = TAIGA_PASSWORD
+        self.token = None
         self.refresh_token = None
         self.token_expiry = None
         self.token_lifetime = timedelta(hours=24)  # Taiga tokens typically last 24 hours
@@ -24,7 +21,7 @@ class TaigaAuth:
 
     def _authenticate(self):
         """Authenticate with Taiga API and get a new token"""
-        print("Generating new token with password auth")
+        print("Generating new API token with password auth")
         auth_url = f"{self.base_url}/api/v1/auth"
         payload = {
             "type": "normal",
@@ -38,12 +35,13 @@ class TaigaAuth:
             auth_data = auth_response.json()
 
 
-            self.auth_token = auth_data['auth_token']
+            self.token = auth_data['auth_token']
             self.refresh_token = auth_data['refresh']
             self.token_expiry = datetime.now() + self.token_lifetime
 
             # Update environment variable
-            os.environ['TAIGA_AUTH_TOKEN'] = self.auth_token
+            #os.environ['TAIGA_AUTH_TOKEN'] = self.token
+            #set_key('.env', 'TAIGA_AUTH_TOKEN', self.token)
 
             # Validate the token immediately
             print("Authenticated, validating token...")
@@ -54,17 +52,17 @@ class TaigaAuth:
 
         except requests.exceptions.RequestException as e:
             print(f"Authentication failed: {e}")
-            self.auth_token = None
+            self.token = None
             self.token_expiry = None
             return False
 
     def _validate_token(self):
         """Validate the current auth token by making a test API call"""
-        if not self.auth_token:
+        if not self.token:
             return False
-        print("Validating token....")
+        print("Validating API token....")
         auth_headers = {
-            "Authorization": f"Bearer {self.auth_token}",
+            "Authorization": f"Bearer {self.token}",
             "Content-Type": "application/json"
         }
 
@@ -76,7 +74,7 @@ class TaigaAuth:
                 timeout=30
             )
             auth_data = auth_response.json()
-            print("Token validation response: ", auth_response.status_code)
+            print("API token validation response: ", auth_response.status_code)
             if auth_response.status_code != 200:
                 return False
             print(
@@ -90,12 +88,11 @@ class TaigaAuth:
     def get_token(self):
         """Get a valid authentication token."""
         # If we have a token, verify it's still valid with the API
-        if self.auth_token:
+        if self.token:
             if self._validate_token():
                 print("Token is valid, keeping it!")
-                return self.auth_token
-            print("Token is invalid or expired, refreshing...")
-        print("No token found, falling back to password auth")
+                return self.token
+            print("API token is missing, invalid or expired, refreshing...")
 
         # If we have a refresh token, try to use it first
         if self.refresh_token:
@@ -110,30 +107,28 @@ class TaigaAuth:
                 refresh_response.raise_for_status()
 
                 refresh_data = refresh_response.json()
-                self.auth_token = refresh_data['access']
+                self.token = refresh_data['access']
                 self.refresh_token = refresh_data['refresh']
                 self.token_expiry = datetime.now() + self.token_lifetime
 
-                # Update environment variable
-                os.environ['TAIGA_AUTH_TOKEN'] = self.auth_token
-
                 print("Token refreshed successfully")
-                return self.auth_token
+                return self.token
 
             except requests.RequestException as e:
                 print(f"Token refresh failed: {e}, falling back to password auth")
 
         # If refresh failed or we don't have a refresh token, authenticate with username/password
         print("No refresh token, falling back to password auth")
-        return self._authenticate()
+        if not self._authenticate():
+            raise ValueError("Authentication failed - check your credentials")
+        return self.token
 
     def get_headers(self):
         """Get headers with valid authentication token"""
         token = self.get_token()
         if not token:
             return None
-        else:
-            return True
+        return True
 
 #Singleton instance for global use
 taiga_auth = TaigaAuth()
@@ -144,7 +139,7 @@ taiga_auth = TaigaAuth()
 #        headers = taiga_auth.get_headers()
 #        if headers:
 #            print("Authentication successful!")
-#            print(f"Token: {taiga_auth.auth_token}")
+#            print(f"Token: {taiga_auth.token}")
 #        else:
 #            print("Failed to obtain authentication token!")
 #    except (requests.RequestException, ValueError, KeyError) as e:

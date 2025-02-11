@@ -11,9 +11,9 @@ import requests # pylint: disable=import-error # pyright: ignore[reportMissingMo
 from discord import Intents, Client
 from flask import Flask, request, abort
 from waitress import serve
-from Handlers.data_handler import process_webhook, forum_tags
-from Handlers.taiga_api_auth import taiga_auth
-from config import DISCORD_TOKEN as TOKEN, CHANNEL_ID, FORUM_ID, SECRET_KEY, WEBHOOK_ROUTE
+from .handlers.data_handler import process_webhook, forum_tags
+from .handlers.taiga_api_auth import taiga_auth
+from .config import DISCORD_TOKEN as TOKEN, CHANNEL_ID, FORUM_ID, SECRET_KEY, WEBHOOK_ROUTE
 
 # Create a Flask app
 app = Flask(__name__)
@@ -22,8 +22,8 @@ def initialize_taiga_api():
     """Initialize the Taiga API"""
     print("Initializing Taiga API...")
     try:
-        token = taiga_auth.get_token()
-        if token:
+        api_token = taiga_auth.get_token()
+        if api_token:
             print("Taiga API initialized!")
         else:
             print("Failed to obtain authentication token!")
