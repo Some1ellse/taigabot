@@ -21,7 +21,6 @@ from handlers.data_handler import ( # pylint: disable=import-error # pyright: ig
 from handlers.taiga_api_auth import taiga_auth # pylint: disable=import-error # pyright: ignore[reportMissingModuleSource]
 from config.config import(  # pylint: disable=import-error # pyright: ignore[reportMissingModuleSource]
     DISCORD_TOKEN as TOKEN,
-    CHANNEL_ID,
     FORUM_ID,
     SECRET_KEY,
     WEBHOOK_ROUTE)
@@ -65,11 +64,9 @@ def respond():
     if valid:
         print("Attempting to process webhook...")
         thread, embed, embed2, flags = process_webhook(payload)
-        if processed_data == 'Test Webhook - Ignoring':
+        if flags['is_test']:
             print("Test Webhook - Ignoring")
             return '', 200
-        elif processed_data is None:
-            return '', 400
         post_args = {
             'user_story': flags['user_story'], # pylint: disable=invalid-sequence-index
             'embed': embed,
@@ -204,26 +201,6 @@ async def update_forum_tags_periodically():
     while True:
         await get_forum_tags(FORUM_ID)
         await asyncio.sleep(300)  # Sleep for 5 minutes (300 seconds)
-
-
-async def send_embed(embed_message):
-    """Try to send provided embed to the indicated channel via bot"""
-    try:
-        print('Sending Embed to Discord...')
-        channel = client.get_channel(CHANNEL_ID)
-        await channel.send(embed=embed_message)
-    except (discord.HTTPException, discord.Forbidden, discord.NotFound) as e:
-        print(f'Discord API error: {e}')
-
-
-async def send_message(bot_message):
-    """Try to send provided message to the indicated channel via bot"""
-    try:
-        print('Sending Message to Discord...')
-        channel = client.get_channel(CHANNEL_ID)
-        await channel.send(bot_message)
-    except (discord.HTTPException, discord.Forbidden, discord.NotFound) as e:
-        print(f'Discord API error: {e}')
 
 
 # HANDLING THE STARTUP FOR BOT

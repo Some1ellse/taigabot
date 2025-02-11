@@ -25,9 +25,7 @@ def process_webhook(data):
 
     is_test = data['data'].get('test', False)
     if is_test:
-        test = "Test Webhook - Ignoring"
-        print("Test Webhook - Ignoring")
-        return test
+        return None, None, None, {'is_test': is_test}
 
     print("\n\nDeterminting payload type...")
     if isinstance(data, dict) and 'type' in data:
