@@ -1,5 +1,5 @@
 """
-A Discord bot that integrates with Taiga webhooks to relay project updates to a Discord channel.
+A Discord bot that integrates with Taiga webhooks and REST API to relay project updates to a Discord Forum channel.
 This module handles webhook processing, message formatting, and Discord communication.
 """
 import threading
