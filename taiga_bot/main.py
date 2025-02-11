@@ -65,21 +65,11 @@ def respond():
     if valid:
         print("Attempting to process webhook...")
         thread, embed, embed2, flags = process_webhook(payload)
-#        if processed_data == 'Test Webhook - Ignoring':
-#            print("Test Webhook - Ignoring")
-#            return '', 200
-#        elif processed_data is None:
-#            return '', 400
-        #print("Attempting to build embed")
-        #embed = embed_builder(processed_data)
-        #print("Attempting to build thread")
-        #new_thread = thread_builder(processed_data)
-        #print("Attempting to send messages")
-        # Only include description_new if it exists
-        print("thread:", thread)
-        print("embed:", embed)
-        print("embed2:", embed2)
-        print("flags:", flags)
+        if processed_data == 'Test Webhook - Ignoring':
+            print("Test Webhook - Ignoring")
+            return '', 200
+        elif processed_data is None:
+            return '', 400
         post_args = {
             'user_story': flags['user_story'], # pylint: disable=invalid-sequence-index
             'embed': embed,
@@ -87,9 +77,6 @@ def respond():
             'new_thread': thread,
             'description_new': flags['description_new'], # pylint: disable=invalid-sequence-index
         }
-#        if isinstance(flags, dict):
-#            if 'description_new' in flags and flags['description_new'] is not None:
-#                post_args['description_new'] = flags['description_new']
 
         client.loop.create_task(send_post(**post_args))
         return '', 200

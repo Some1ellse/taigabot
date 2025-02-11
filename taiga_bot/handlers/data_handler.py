@@ -85,7 +85,6 @@ def userstory_handler(data):
     tags = None                     # Check
     thread = None                   # Check
     title = None                    # Check
-    title_linked = None             # Check
     title_plain = None              # Check
     to_from = {}
     thumbnail_url = None            # Check
@@ -198,7 +197,6 @@ def userstory_handler(data):
         title = data['data']['subject']
         story_url = data['data']['permalink']
         ticket_number = story_url.split('/')[-1]
-        title_linked = f"[#{ticket_number} {title}]({story_url})"
         title_plain = f"#{ticket_number} {title}"
 
         if action == 'create':
@@ -281,7 +279,7 @@ def userstory_handler(data):
     full_description = adjust_markdown(description)
 
     if len(full_description) > 2000:
-        description = full_description[:1000]
+        description = full_description[:1100]
         description = (":inbox_tray:\n\n" + description +
         "\n\n### Description Truncated. Log into Taiga to see full description."
         )
