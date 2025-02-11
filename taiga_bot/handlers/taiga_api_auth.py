@@ -1,7 +1,11 @@
 """Authentication handler for Taiga API"""
 from datetime import datetime, timedelta
 import requests # pylint: disable=import-error # pyright: ignore[reportMissingModuleSource]
-from ..config import TAIGA_BASE_URL, TAIGA_USERNAME, TAIGA_PASSWORD
+from config.config import (  # pylint: disable=import-error # pyright: ignore[reportMissingModuleSource]
+    TAIGA_BASE_URL,
+    TAIGA_USERNAME,
+    TAIGA_PASSWORD
+    )
 
 
 class TaigaAuth:

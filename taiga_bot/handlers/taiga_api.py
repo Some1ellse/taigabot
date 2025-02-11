@@ -3,8 +3,8 @@ Handler for Taiga API calls
 """
 from datetime import datetime, timedelta
 import requests # pylint: disable=import-error # pyright: ignore[reportMissingModuleSource]
-from ..config import TAIGA_BASE_URL
-from .taiga_api_auth import taiga_auth
+from config.config import TAIGA_BASE_URL  # pylint: disable=import-error # pyright: ignore[reportMissingModuleSource]
+from handlers.taiga_api_auth import taiga_auth  # pylint: disable=import-error # pyright: ignore[reportMissingModuleSource]
 
 def get_user_story_history(
     user_story_id,
@@ -104,6 +104,8 @@ def generic_api_call(url, retries=3):
 
     Args:
         url: Value[str]: The URL to call
+            Full url should be provided i.e. 
+                https://taiga.example.com/api/v1/userstories/172
         retries: Optional[int]: Number of retries if API call fails
 
     Returns:

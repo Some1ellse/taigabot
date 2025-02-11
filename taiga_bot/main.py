@@ -8,12 +8,23 @@ import hashlib
 import asyncio
 import discord
 import requests # pylint: disable=import-error # pyright: ignore[reportMissingModuleSource]
-from discord import Intents, Client
+from discord import (
+    Intents,
+    Client
+)
 from flask import Flask, request, abort
 from waitress import serve
-from .handlers.data_handler import process_webhook, forum_tags
-from .handlers.taiga_api_auth import taiga_auth
-from .config import DISCORD_TOKEN as TOKEN, CHANNEL_ID, FORUM_ID, SECRET_KEY, WEBHOOK_ROUTE
+from handlers.data_handler import ( # pylint: disable=import-error # pyright: ignore[reportMissingModuleSource]
+    process_webhook,
+    forum_tags
+)
+from handlers.taiga_api_auth import taiga_auth # pylint: disable=import-error # pyright: ignore[reportMissingModuleSource]
+from config.config import(  # pylint: disable=import-error # pyright: ignore[reportMissingModuleSource]
+    DISCORD_TOKEN as TOKEN,
+    CHANNEL_ID,
+    FORUM_ID,
+    SECRET_KEY,
+    WEBHOOK_ROUTE)
 
 # Create a Flask app
 app = Flask(__name__)
