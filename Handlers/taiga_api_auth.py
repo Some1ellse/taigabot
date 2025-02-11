@@ -33,7 +33,7 @@ class TaigaAuth:
         }
 
         try:
-            auth_response = requests.post(auth_url, json=payload)
+            auth_response = requests.post(auth_url, json=payload, timeout=30)
             auth_response.raise_for_status()
             auth_data = auth_response.json()
 
@@ -72,7 +72,8 @@ class TaigaAuth:
             # Make a lightweight API call to verify token
             auth_response = requests.get(
                 f"{self.base_url}/api/v1/users/me",
-                headers=auth_headers
+                headers=auth_headers,
+                timeout=30
             )
             auth_data = auth_response.json()
             print("Token validation response: ", auth_response.status_code)
@@ -103,7 +104,8 @@ class TaigaAuth:
                 refresh_url = f"{self.base_url}/api/v1/auth/refresh"
                 refresh_response = requests.post(
                     refresh_url,
-                    json={"refresh": self.refresh_token}
+                    json={"refresh": self.refresh_token},
+                    timeout=30
                 )
                 refresh_response.raise_for_status()
 
