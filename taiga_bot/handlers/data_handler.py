@@ -68,6 +68,7 @@ def userstory_handler(data):
             return None
     # Define variables
     # TODO: Update description emoji to match status' like closed or blocked.
+    # TODO: Look into mentioning users who are tagged in comments.
     action_diff = []
     api_data = None
     author = None
