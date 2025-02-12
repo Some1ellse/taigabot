@@ -72,6 +72,9 @@ def respond():
         if isinstance(flags, dict) and 'delete' in flags and flags['delete']:
             client.loop.create_task(delete_post(flags['user_story']))
             return '', 200
+        if isinstance(flags, dict) and 'error' in flags and flags['error']:
+            print(f"Webhook - Error {flags['error']}")
+            return '', 500
         post_args = {
             'user_story': flags['user_story'], # pylint: disable=invalid-sequence-index
             'embed': embed,

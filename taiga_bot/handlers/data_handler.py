@@ -33,9 +33,28 @@ def process_webhook(data):
             print("Malformed Webhook - Type not found")
             return None
         if payload_type == 'userstory':
-            processed_data = userstory_handler(data)
-            return processed_data
-    return
+            return userstory_handler(data)
+        if payload_type == 'task':
+            return task_handler(data)
+    return None, None, None, {'error': 'invalid_payload'}
+
+def task_handler(data):
+    """Handle a task webhook"""
+    print("\n\nTask Webhook Received, Processing...")
+    is_test = True
+
+    if isinstance(data, dict) and 'action' in data:
+        action = data['action']
+        if not action:
+            print("Malformed Webhook - Action not found")
+            return None
+
+    if action == 'create':
+        print("\n\nTask Webhook - Create, Processing...")
+
+
+
+    return None, None, None, {'is_test': is_test}
 
 def userstory_handler(data):
     """Handle a user story webhook"""
@@ -242,6 +261,10 @@ def userstory_handler(data):
                         embed_color = discord.Color.red()
                 if isinstance(change, dict) and 'diff' in change:
                     diff = change['diff']
+                    if isinstance(diff, dict) and 'assigned_users' in diff:
+                        if isinstance(diff, dict) and 'from' in diff['assigned_users']:
+                            action_diff.append("The assigned users were changed. Login to Tiaga to see the new assignements.")
+                            embed_color = discord.Color.blue()
                     if isinstance(diff, dict) and 'is_blocked' in diff:
                         if isinstance(diff, dict) and 'from' in diff['is_blocked']:
                             action_diff.append("The blocked status was updated")
@@ -453,7 +476,12 @@ def userstory_handler(data):
         icon_url="https://taiga.io/media/images/Logo-text.width-140.png"
         )
 
-
+    print(f"thread is {thread}")
+    print(f"embed is {embed}")
+    print(f"embed2 is {embed2}")
+    print(f"flags are {flags}")
+    if thread and embed and embed2 and flags:
+        print("Line 490: data_handler.pyAll conditions met, returning data")
     return thread, embed, embed2, flags
 
 def embed_builder(data):
