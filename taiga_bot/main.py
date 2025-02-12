@@ -81,6 +81,7 @@ def respond():
             'embed2': embed2,
             'new_thread': thread,
             'description_new': flags['description_new'], # pylint: disable=invalid-sequence-index
+            'mention': flags['mention']
             }
 
         client.loop.create_task(send_post(**post_args))
@@ -112,9 +113,10 @@ async def delete_post(user_story):
                 print('Forum Post deleted in Discord...')
                 return
 
-async def send_post(user_story, embed, embed2, new_thread=None, description_new=None):
+async def send_post(user_story, embed, embed2, new_thread=None, description_new=None, mention=None):
     """Try to send provided message to the indicated forum via bot"""
     is_thread = False
+    mention = await build_mentions(mention)
     try:
         print('Sending Forum Post to Discord...')
         channel = client.get_channel(FORUM_ID)
@@ -139,7 +141,7 @@ async def send_post(user_story, embed, embed2, new_thread=None, description_new=
                             #f"{first_message.author}, System: {first_message.is_system()}")
                             await messages[2].edit(embed=embed2)
                             await messages[2].pin()
-                            await thread.send(embed=embed)
+                            await thread.send(f'{mention}', embed=embed)
                         else:
                             await thread.send(embed=embed2)
                             await asyncio.sleep(5)
@@ -188,6 +190,19 @@ async def send_post(user_story, embed, embed2, new_thread=None, description_new=
             print('Forum Channel not found...')
     except (discord.HTTPException, discord.Forbidden, discord.NotFound) as e:
         print(f'Discord API error: {e}')
+
+async def build_mentions(mentions):
+    """Builds a list of mentions from a list of user IDs"""
+    channel = await client.fetch_channel(FORUM_ID)
+    print('Building mentions...')
+    mention_string = ''
+    for user_id in mentions:
+        user = discord.utils.get(channel.guild.members, name=user_id)
+        if not user:
+            print(f"User {user_id} not found for mention.")
+            continue
+        mention_string += f'{user.mention}'
+    return mention_string
 
 async def get_members(forum_id: int):
     """Fetches all members of a guild and stores them in a list."""

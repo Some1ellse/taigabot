@@ -2,10 +2,11 @@
 Data handler for Taiga webhooks
 """
 import datetime
+import re
 from dataclasses import dataclass, field # pylint: disable=unused-import
 from pprint import pprint
 import discord
-from .taiga_api import get_user_story_history, get_user_story, get_swimlane
+from .taiga_api import get_user_story_history, get_user_story, get_swimlane, get_user
 
 @dataclass
 class ForumTags:
@@ -76,6 +77,7 @@ def userstory_handler(data):
     author_url = None
     author_icon_url = None
     assigned = None
+    assigned_users = None
     blocked = None # pylint: disable=unused-variable
     blocked_reason = None
     description = None
@@ -90,6 +92,7 @@ def userstory_handler(data):
     has_client_requirement = None
     history = None
     link = None
+    mention = []
     milestone = None
     owner = None
     owner_url = None
@@ -104,6 +107,7 @@ def userstory_handler(data):
     title_plain = None
     to_from = {}
     thumbnail_url = None
+    watchers = []
 
 
     # Initial API call to catch pre-existing objects.
@@ -146,6 +150,8 @@ def userstory_handler(data):
                     assigned = "Unassigned"
                 else:
                     assigned = assigned_to['full_name']
+            if isinstance(sub_data, dict) and 'assigned_users' in sub_data:
+                assigned_users = sub_data['assigned_users']
             if isinstance(sub_data, dict) and 'blocked_note' in sub_data:
                 if sub_data['blocked_note']:
                     blocked_reason = sub_data['blocked_note']
@@ -236,6 +242,10 @@ def userstory_handler(data):
             api_data = None
 
         if action == 'change':
+            if isinstance(data, dict) and 'data' in data:
+                sub_data = data['data']
+                if isinstance(sub_data, dict) and 'watchers' in sub_data:
+                    watchers = sub_data['watchers']
             if isinstance(data, dict) and 'change' in data:
                 change = data['change']
                 if isinstance(change, dict) and 'comment' in change:
@@ -331,7 +341,15 @@ def userstory_handler(data):
                     action_diff.append(data['change']['comment'])
 
 
-    if (action == 'create') or (action == 'change'):
+    if (action in ['create', 'change']):
+        mention_users = assigned_users + [item for item in watchers if item not in assigned_users]
+        mention = []
+        for user in mention_users:
+            api_data = None
+            api_data = get_user(user)
+            if isinstance(api_data, dict) and 'bio' in api_data:
+                mention.append(find_mention(api_data['bio']))
+                print(mention)
         full_description = adjust_markdown(description)
 
         if len(full_description) > 2000:
@@ -376,6 +394,8 @@ def userstory_handler(data):
         flags['swimlane'] = None
     if action == 'delete':
         flags['delete'] = True
+    if mention:
+        flags['mention'] = mention
 
     if action == 'change':
         embed = discord.Embed(
@@ -425,7 +445,7 @@ def userstory_handler(data):
 
     embed2 = discord.Embed(
         title=title_plain,
-        description='Current Stauts (Always Updated)',
+        description='Current Status (Always Updated)',
         url=link,
         color=discord.Color.purple(),
         timestamp=datetime.datetime.now(datetime.UTC),
@@ -476,12 +496,6 @@ def userstory_handler(data):
         icon_url="https://taiga.io/media/images/Logo-text.width-140.png"
         )
 
-    print(f"thread is {thread}")
-    print(f"embed is {embed}")
-    print(f"embed2 is {embed2}")
-    print(f"flags are {flags}")
-    if thread and embed and embed2 and flags:
-        print("Line 490: data_handler.pyAll conditions met, returning data")
     return thread, embed, embed2, flags
 
 def embed_builder(data):
@@ -564,3 +578,7 @@ def adjust_markdown(content):
     """Adjust markdown to make it look good"""
     content = content.replace('####', '###')
     return content
+
+def find_mention(text):
+    match = re.search(r"@(\S+)", text)  # Matches '@' followed by non-whitespace characters
+    return match.group(1) if match else None
