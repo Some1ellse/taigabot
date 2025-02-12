@@ -75,6 +75,20 @@ def get_user_story(user_story_id, retries=3):
 
     return generic_api_call(url, retries)
 
+def get_user(user_id, retries=3):
+    """Get a user by ID from Taiga API
+
+    Args:
+        user_id: value[int]: The ID of the user
+        retries: Optional[int]: Number of retries if API call fails
+
+    Returns:
+        dict: User data if successful, None if failed
+    """
+    url = f"{TAIGA_BASE_URL}/api/v1/users/{user_id}"
+
+    return generic_api_call(url, retries)
+
 def get_swimlane(swimlane_id, retries=3):
     """Get a swimlane by ID from Taiga API
 
