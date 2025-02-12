@@ -2,7 +2,6 @@
 Data handler for Taiga webhooks
 """
 import datetime
-import time
 from dataclasses import dataclass, field # pylint: disable=unused-import
 from pprint import pprint
 import discord
