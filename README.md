@@ -48,8 +48,8 @@ Automatically posts updates from Taiga to Discord when:
 #### Taiga
 1. Enable webhooks on your Taiga instance
 2. Create a webhook on your Taiga project
-  1. set secret key (use your favorite method to generate one.)
-  2. set webhook URL: including route. example: https://taiga.example.com/webhook
+   - set secret key (use your favorite method to generate one.)
+   - set webhook URL: including route. example: https://taiga.example.com/webhook
 ```Secret Key Generation Examples:
 
 openssl rand -base64 32
