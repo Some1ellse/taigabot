@@ -36,6 +36,11 @@ Automatically posts updates from Taiga to Discord when:
   - Blocking status
   - Links back to Taiga
 
+- 🌟 **Automatic Tagging**: Automatically tag forum posts for easy sorting.
+  - Taiga Swimlanes count as tags. Posts are tagged with the swimlane they are in.
+    - Swimlane and Discord tag names must match exactly.
+  - Tags (Coming soon! ...possibly)
+
 ## Setup
 
 ### Prerequisites
