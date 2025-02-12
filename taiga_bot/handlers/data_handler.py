@@ -397,7 +397,7 @@ def userstory_handler(data):
                 inline=True
                 )
         embed.set_footer(
-            text=title_plain,
+            text='Powered by Taiga REST API | Coded by @Some1ellse',
             icon_url="https://taiga.io/media/images/Logo-text.width-140.png"
             )
 
@@ -486,7 +486,7 @@ def embed_builder(data):
             inline=data['embed_field2_inline']
             )
     embed.set_footer(
-        text=data['user_story'],
+        text='Powered by Taiga REST API | Coded by @Some1ellse',
         icon_url="https://taiga.io/media/images/Logo-text.width-140.png"
         )
     return embed
