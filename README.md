@@ -43,7 +43,7 @@ Automatically posts updates from Taiga to Discord when:
 
 #### Proxy
 1. Ensure there is some form of proxy between the bot and Taiga, so you can properly catch the webhook route.
-- Nginx Proxy Manager is a good easy way to do this- https://nginxproxymanager.com/ 
+   - Nginx Proxy Manager is a good easy way to do this- https://nginxproxymanager.com/ 
 
 #### Taiga
 1. Enable webhooks on your Taiga instance
@@ -60,7 +60,7 @@ or a random string generator of some kind.
 
 ### Run the bot
 
-- Run in python
+#### Run in python
 1. Clone the repository
 2. Setup virtual envrionment (recommended)
 3. Create a .env file and fill it in with the env variables below.
@@ -68,17 +68,17 @@ or a random string generator of some kind.
 5. python -m pip install -r requirements.txt
 6. python main.py
 
-- Build docker image yourself.
+#### Build docker image yourself.
 1. Clone the repository
 2. Comment out lines #4 and #6 in config.py
 3. Build the Docker image
 4. Run the container
 
-- Run from dockerhub
+#### Run from dockerhub
 1. Pull the image some1ellse/taigabot:latest
 2. Run the container
 
-2. Configure environment variables:
+### Configure environment variables:
    ```env
   # Discord configuration
   DISCORD_TOKEN: Discord bot token
