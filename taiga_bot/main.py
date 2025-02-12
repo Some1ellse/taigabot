@@ -197,7 +197,10 @@ async def build_mentions(mentions):
     print('Building mentions...')
     mention_string = ''
     for user_id in mentions:
-        user = discord.utils.get(channel.guild.members, name=user_id)
+        user = next(
+            (member for member in channel.guild.members
+            if member.name.lower() == user_id.lower()), None
+            )
         if not user:
             print(f"User {user_id} not found for mention.")
             continue

@@ -67,10 +67,7 @@ def userstory_handler(data):
             print("Malformed Webhook - Action not found")
             return None
     # Define variables
-    # TODO: Assigned users and watchers.
-    # TODO: @ mention watchers and assignee's
     # TODO: Update description emoji to match status' like closed or blocked.
-        # Need to build a database of user ID's and figure out discord @ing
     action_diff = []
     api_data = None
     author = None
@@ -273,7 +270,10 @@ def userstory_handler(data):
                     diff = change['diff']
                     if isinstance(diff, dict) and 'assigned_users' in diff:
                         if isinstance(diff, dict) and 'from' in diff['assigned_users']:
-                            action_diff.append("The assigned users were changed. Login to Tiaga to see the new assignements.")
+                            action_diff.append(
+                                "The assigned users were changed."
+                                " Login to Tiaga to see the new assignements."
+                                )
                             embed_color = discord.Color.blue()
                     if isinstance(diff, dict) and 'is_blocked' in diff:
                         if isinstance(diff, dict) and 'from' in diff['is_blocked']:
@@ -580,5 +580,6 @@ def adjust_markdown(content):
     return content
 
 def find_mention(text):
-    match = re.search(r"@(\S+)", text)  # Matches '@' followed by non-whitespace characters
+    """Find a mention in text"""
+    match = re.search(r"@([^\s\r\n]+)", text)
     return match.group(1) if match else None
