@@ -39,7 +39,7 @@ Automatically posts updates from Taiga to Discord when:
 #### Discord
 1. Create a Discord application and get your token
 2. Invite the bot to your server
-3. Ensure your Discord server is Community enabled, and createa  forum channel for posts.
+3. Ensure your Discord server is Community enabled, and create a forum channel for posts.
 
 #### Proxy
 1. Ensure there is some form of proxy between the bot and Taiga, so you can properly catch the webhook route.
@@ -48,8 +48,8 @@ Automatically posts updates from Taiga to Discord when:
 #### Taiga
 1. Enable webhooks on your Taiga instance
 2. Create a webhook on your Taiga project
-- set secret key (use your favorite method to generate one.)
-- set webhook URL: including route. example: https://taiga.example.com/webhook
+  - set secret key (use your favorite method to generate one.)
+  - set webhook URL: including route. example: https://taiga.example.com/webhook
 ```Secret Key Generation Examples:
 
 openssl rand -base64 32
