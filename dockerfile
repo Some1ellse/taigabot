@@ -2,15 +2,17 @@ FROM python:3.12.7
 
 WORKDIR /data
 
-RUN mkdir -p /data/Handlers
+RUN mkdir -p /data/handlers
+RUN mkdir -p /data/config
 
-COPY ./main.py /data/main.py
-COPY ./config.py /data/config.py
-COPY ./Handlers/data_handler.py /data/Handlers/data_handler.py
-COPY ./Handlers/taiga_api.py /data/Handlers/taiga_api.py
-COPY ./Handlers/taiga_api_auth.py /data/Handlers/taiga_api_auth.py
-COPY ./Handlers/__init__.py /data/Handlers/__init__.py
-COPY ./requirements.txt /data/requirements.txt
+COPY ./taiga_bot/main.py /data/main.py
+COPY ./taiga_bot/config/__init__.py /data/config/__init__.py
+COPY ./taiga_bot/config/config.py /data/config/config.py
+COPY ./taiga_bot/handlers/data_handler.py /data/handlers/data_handler.py
+COPY ./taiga_bot/handlers/taiga_api.py /data/handlers/taiga_api.py
+COPY ./taiga_bot/handlers/taiga_api_auth.py /data/handlers/taiga_api_auth.py
+COPY ./taiga_bot/handlers/__init__.py /data/handlers/__init__.py
+COPY ./taiga_bot/requirements.txt /data/requirements.txt
 
 RUN pip install -r /data/requirements.txt
 
