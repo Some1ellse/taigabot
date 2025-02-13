@@ -3,7 +3,7 @@
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/some1ellse)
 
 A simple Discord bot written in Python.
-Itegrates with Taiga webhooks and REST API for automatic updates and notifications.
+Integrates with Taiga webhooks and REST API for automatic updates and notifications.
 
 There are no commands, this is not an interactive bot.
 
