@@ -16,36 +16,90 @@ class ForumTags:
 #Singleton instance for global use
 forum_tags = ForumTags(tags={})
 
-def process_webhook(data):
+class UserInfo:
+    """Stores user information as a dictionary {user_id: user_name}."""
+    def __init__(self, name=None, url=None, avatar=None, id=None):
+        self.name = name
+        self.url = url
+        self.avatar = avatar
+        self.id = id
+
+    def get(self, dictionary):
+        """Get user information from a dictionary"""
+        self.name = safe_get(dictionary, ['by','full_name'])
+        self.url = safe_get(dictionary, ['by', 'permalink'])
+        self.avatar = safe_get(
+            dictionary,
+            ['by', 'photo']
+        ) if safe_get(dictionary, ['by', 'photo']) else (
+            "https://pm.ks-webserver.com/v-1721729942015/images/"
+            "user-avatars/user-avatar-01.png"
+        )
+        self.id = safe_get(dictionary, ['by', 'id'])
+        return self
+
+userinfo = UserInfo()
+
+def safe_get(dictionary, keys, default=None):
+    """
+    Safely extracts a value from a nested dictionary.
+
+    :param dictionary: The dictionary to extract from.
+    :param keys: A list or tuple of keys representing the nested path.
+    :param default: The default value to return if any key is missing or empty.
+    :return: The value found at the nested key path, or the default value.
+    """
+    current = dictionary
+    for key in keys:
+        if isinstance(current, dict) and key in current:
+            current = current[key]
+            if current in (None, '', [], {}, ()):  # Handle empty values
+                return default
+        else:
+            return default
+    return current
+
+# Example usage:
+data = {
+    'user': {
+        'profile': {
+            'name': 'Alice',
+            'age': None,
+            'address': {'city': 'New York'}
+        }
+    }
+}
+
+def process_webhook(payload):
     """Process webhook data into strings to send to bot"""
     is_test = False
 
     print("\n\nProcessing Started on...")
-    pprint(data)
+    pprint(payload)
 
-    is_test = data['data'].get('test', False)
+    is_test = safe_get(payload, ['data', 'test'], False)
     if is_test:
         return None, None, None, {'is_test': is_test}
 
     print("\n\nDeterminting payload type...")
-    if isinstance(data, dict) and 'type' in data:
-        payload_type = data['type']
-        if not payload_type:
-            print("Malformed Webhook - Type not found")
-            return None
-        if payload_type == 'userstory':
-            return userstory_handler(data)
-        if payload_type == 'task':
-            return task_handler(data)
+
+    payload_type = safe_get(payload, ['type'])
+    if not payload_type:
+        print("Malformed Webhook - Type not found")
+        return None, None, None, {'error': 'Malformed Webhook - Type not found'}
+    if payload_type == 'userstory':
+        return userstory_handler(payload)
+    if payload_type == 'task':
+        return task_handler(payload)
     return None, None, None, {'error': 'invalid_payload'}
 
-def task_handler(data):
+def task_handler(payload):
     """Handle a task webhook"""
     print("\n\nTask Webhook Received, Processing...")
     is_test = True
 
-    if isinstance(data, dict) and 'action' in data:
-        action = data['action']
+    if isinstance(payload, dict) and 'action' in payload:
+        action = payload['action']
         if not action:
             print("Malformed Webhook - Action not found")
             return None
@@ -57,292 +111,172 @@ def task_handler(data):
 
     return None, None, None, {'is_test': is_test}
 
-def userstory_handler(data):
+def userstory_handler(payload):
     """Handle a user story webhook"""
     print("\n\nUserstory Webhook Received, Processing...")
-    action = None
-    if isinstance(data, dict) and 'action' in data:
-        action = data['action']
-        if not action:
-            print("Malformed Webhook - Action not found")
-            return None
+    user = userinfo.get(payload)  # Store the returned user info
+    action = safe_get(payload, ['action'])
+    if not action:
+        print("Malformed Webhook - Action not found")
+        return None, None, None, {'error': 'Malformed Webhook - Action not found'}
     # Define variables
     # TODO: Update description emoji to match status' like closed or blocked.
     # TODO: Look into mentioning users who are tagged in comments.
     action_diff = []
     api_data = None
-    author = None
-    author_url = None
-    author_icon_url = None
-    assigned = None
-    assigned_users = None
-    blocked = None # pylint: disable=unused-variable
-    blocked_reason = None
-    description = None
+    assigned = safe_get(payload, ['data', 'assigned_to'])
+    assigned_users = safe_get(payload, ['data', 'assigned_users'])
+    blocked = safe_get(payload, ['data', 'is_blocked']) # pylint: disable=unused-variable
+    blocked_reason = safe_get(
+        payload,
+        ['data', 'blocked_note']
+        ) if safe_get(payload, ['data', 'blocked_note']) else "No reason provided"
+    description = safe_get(payload, ['data', 'description'])
     description_new = None
-    due_date = None
+    due_date = safe_get(payload, ['data', 'due_date'])
     due_date_old = None
-    due_date_reason = None
+    due_date_reason = safe_get(payload, ['data', 'due_date_reason'])
     embed = None
     embed2 = None
     embed_color = None
-    has_team_requirement = None
-    has_client_requirement = None
+    has_team_requirement = safe_get(payload, ['data', 'has_team_requirement'])
+    has_client_requirement = safe_get(payload, ['data', 'has_client_requirement'])
     history = None
-    link = None
+    link = safe_get(payload, ['data', 'permalink'])
     mention = []
-    milestone = None
-    owner = None
-    owner_url = None
-    owner_icon_url = None
-    status = None
-    story_id = None
-    swimlane = None
-    swimlane_id = None
-    tags = None
+    milestone = safe_get(payload, ['data', 'milestone', 'name'])
+    owner = safe_get(payload, ['data', 'owner', 'full_name'])
+    owner_url = safe_get(payload, ['data', 'owner', 'permalink'])
+    owner_icon_url = safe_get(
+            payload,
+            ['data', 'owner', 'photo']
+        ) if safe_get(payload, ['data', 'owner', 'photo']) else (
+            "https://pm.ks-webserver.com/v-1721729942015"
+            "/images/user-avatars/user-avatar-01.png"
+        )
+    status = safe_get(payload, ['data', 'status', 'name'])
+    story_id = safe_get(payload, ['data', 'id'])
+    swimlane = safe_get(payload, ['data', 'swimlane'])
+    swimlane_id = safe_get(payload, ['data', 'swimlane_id'])
+    tags = safe_get(payload, ['data', 'tags'])
     thread = None
-    title = None
-    title_plain = None
+    ticket_number = safe_get(payload, ['data', 'ref'])
+    title = safe_get(payload, ['data', 'subject'])
+    title_plain = f"#{ticket_number} {title}"
     to_from = {}
-    thumbnail_url = None
-    watchers = []
+    thumbnail_url = safe_get(
+            payload,
+            ['data', 'project', 'logo_big_url']
+        ) if safe_get(payload, ['data', 'project', 'logo_big_url']) else (
+            "https://pm.ks-webserver.com/v-1721729942015"
+            "/images/project-logos/project-logo-01.png"
+        )
+    watchers = safe_get(payload, ['data', 'watchers'])
 
 
     # Initial API call to catch pre-existing objects.
-    if isinstance(data, dict) and 'data' in data:
-        sub_data = data['data']
-        if isinstance(sub_data, dict) and 'id' in sub_data:
-            if sub_data['id']:
-                story_id = sub_data['id']
-        if isinstance(sub_data, dict) and 'subject' in sub_data:
-            if sub_data['subject']:
-                title = sub_data['subject']
-            else:
-                print("Malformed Webhook - Subject not found")
-                return None
-        if isinstance(sub_data, dict) and 'permalink' in sub_data:
-            if sub_data['permalink']:
-                link = sub_data['permalink']
-            else:
-                print("Malformed Webhook - Permalink not found")
-                return None
-
-    ticket_number = link.split('/')[-1]
-    title_plain = f"#{ticket_number} {title}"
-
-    if data['action'] != 'delete':
+    if action != 'delete':
         api_data = get_user_story(story_id)
-        if isinstance(api_data, dict) and 'swimlane' in api_data:
-            swimlane_id = api_data['swimlane']
+        swimlane_id = safe_get(api_data, ['swimlane'])
+        if swimlane_id:
             api_data = get_swimlane(swimlane_id)
-            swimlane = api_data['name']
+            swimlane = safe_get(api_data, ['name'])
         api_data = None
 
-    if action == 'create' or action == 'change':
-        # Get Title
-        if isinstance(data, dict) and 'data' in data:
-            sub_data = data['data']
-            if isinstance(sub_data, dict) and 'assigned_to' in sub_data:
-                assigned_to = sub_data['assigned_to']
-                if not assigned_to:
-                    assigned = "Unassigned"
-                else:
-                    assigned = assigned_to['full_name']
-            if isinstance(sub_data, dict) and 'assigned_users' in sub_data:
-                assigned_users = sub_data['assigned_users']
-            if isinstance(sub_data, dict) and 'blocked_note' in sub_data:
-                if sub_data['blocked_note']:
-                    blocked_reason = sub_data['blocked_note']
-                else:
-                    blocked_reason = "No reason provided"
-            if isinstance(sub_data, dict) and 'client_requirement' in sub_data:
-                if sub_data['client_requirement']:
-                    has_client_requirement = "Yes"
-                else:
-                    has_client_requirement = None
-            if isinstance(sub_data, dict) and 'description' in sub_data:
-                description = sub_data['description']
-            if isinstance(sub_data, dict) and 'due_date' in sub_data:
-                if sub_data['due_date']:
-                    due_date = sub_data['due_date']
-                if sub_data['due_date_reason']:
-                    due_date_reason = sub_data['due_date_reason']
-            if isinstance(sub_data, dict) and 'id' in sub_data:
-                if sub_data['id']:
-                    story_id = sub_data['id']
-                else:
-                    print("Malformed Webhook - Story ID not found")
-                    return None
-            if isinstance(sub_data, dict) and 'is_blocked' in sub_data:
-                if sub_data['is_blocked']:
-                    blocked = True
-                else:
-                    blocked = False
-                    blocked_reason = None
-            if isinstance(sub_data, dict) and 'milestone' in sub_data:
-                if sub_data['milestone']:
-                    milestone = sub_data['milestone']['name']
-            if isinstance(sub_data, dict) and 'owner' in sub_data:
-                owner = sub_data['owner']['full_name']
-                owner_url = sub_data['owner']['permalink']
-                if sub_data['owner']['photo']:
-                    owner_icon_url = sub_data['owner']['photo']
-                else:
-                    owner_icon_url = (
-                        "https://pm.ks-webserver.com/v-1721729942015"
-                        "/images/user-avatars/user-avatar-01.png"
-                        )
-            if isinstance(sub_data, dict) and 'status' in sub_data:
-                if sub_data['status']:
-                    if sub_data['status']['name']:
-                        status = sub_data['status']['name']
-                    else:
-                        print("Malformed Webhook - Status not found")
-                        return None
-            if isinstance(sub_data, dict) and 'tags' in sub_data:
-                if sub_data['tags']:
-                    tags = sub_data['tags']
-                else:
-                    tags = []
-            if isinstance(sub_data, dict) and 'team_requirement' in sub_data:
-                if sub_data['team_requirement']:
-                    has_team_requirement = "Yes"
-                else:
-                    has_team_requirement = None
-            if isinstance(sub_data, dict) and 'project' in sub_data:
-                if sub_data['project']['logo_big_url']:
-                    thumbnail_url = sub_data['project']['logo_big_url']
-                else:
-                    thumbnail_url = (
-                        "https://pm.ks-webserver.com/v-1721729942015"
-                        "/images/project-logos/project-logo-01.png"
-                        )
-        if isinstance(data, dict) and 'by' in data:
-            author = data['by']['full_name']
-            author_url = data['by']['permalink']
-            if data['by']['photo']:
-                author_icon_url = data['by']['photo']
+    if action == 'create':
+        action_diff.append("A new user story was created")
+        embed_color = discord.Color.green()
+
+    if action == 'change':
+        change = safe_get(payload, ['change'])
+        if safe_get(change, ['comment']) is not None:
+            if (
+                change['comment'] != '' and
+                change['edit_comment_date'] is None and
+                change['delete_comment_date'] is None
+                ):
+                action_diff.append("New Comment!")
+                action_diff.append(change['comment'])
+                embed_color = discord.Color.green()
+            elif (
+                change['comment'] is not None and
+                change['edit_comment_date'] is not None and
+                change['delete_comment_date'] is None
+                ):
+                action_diff.append("Comment edited.")
+                action_diff.append(change['comment'])
+                embed_color = discord.Color.blue()
+            elif (
+                change['comment'] is not None and
+                change['delete_comment_date'] is not None
+                ):
+                action_diff.append("Comment Deleted!")
+                action_diff.append(change['comment'])
+                embed_color = discord.Color.red()
+        diff = safe_get(change, ['diff'])
+        if safe_get(diff, ['assigned_users', 'from']) is not None:
+            action_diff.append(
+                "The assigned users were changed."
+                " Login to Tiaga to see the new assignements."
+                )
+            embed_color = discord.Color.blue()
+        if safe_get(diff, ['is_blocked', 'from']) is not None:
+            action_diff.append("The blocked status was updated")
+            to_from['to'] = blocked
+            embed_color = discord.Color.blue()
+            if diff['is_blocked']['from']:
+                to_from['from'] = "Yes"
             else:
-                author_icon_url = (
-                    "https://pm.ks-webserver.com/v-1721729942015"
-                    "/images/user-avatars/user-avatar-01.png"
-                    )
-
-        if action == 'create':
-            action_diff.append("A new user story was created")
-            embed_color = discord.Color.green()
-
-            api_data = get_user_story(story_id)
-            if isinstance(api_data, dict) and 'swimlane' in api_data:
-                swimlane_id = api_data['swimlane']
-                api_data = get_swimlane(swimlane_id)
-                swimlane = api_data['name']
-            api_data = None
-
-        if action == 'change':
-            if isinstance(data, dict) and 'data' in data:
-                sub_data = data['data']
-                if isinstance(sub_data, dict) and 'watchers' in sub_data:
-                    watchers = sub_data['watchers']
-            if isinstance(data, dict) and 'change' in data:
-                change = data['change']
-                if isinstance(change, dict) and 'comment' in change:
-                    if (
-                        change['comment'] != '' and
-                        change['edit_comment_date'] is None and
-                        change['delete_comment_date'] is None
-                        ):
-                        action_diff.append("New Comment!")
-                        embed_color = discord.Color.green()
-                    elif (
-                        change['comment'] is not None and
-                        change['edit_comment_date'] is not None and
-                        change['delete_comment_date'] is None
-                        ):
-                        action_diff.append("Comment edited.")
-                        embed_color = discord.Color.blue()
-                    elif (
-                        change['comment'] is not None and
-                        change['delete_comment_date'] is not None
-                        ):
-                        action_diff.append("Comment Deleted!")
-                        embed_color = discord.Color.red()
-                if isinstance(change, dict) and 'diff' in change:
-                    diff = change['diff']
-                    if isinstance(diff, dict) and 'assigned_users' in diff:
-                        if isinstance(diff, dict) and 'from' in diff['assigned_users']:
-                            action_diff.append(
-                                "The assigned users were changed."
-                                " Login to Tiaga to see the new assignements."
-                                )
-                            embed_color = discord.Color.blue()
-                    if isinstance(diff, dict) and 'is_blocked' in diff:
-                        if isinstance(diff, dict) and 'from' in diff['is_blocked']:
-                            action_diff.append("The blocked status was updated")
-                            to_from['to'] = blocked
-                            embed_color = discord.Color.blue()
-                            if diff['is_blocked']['from']:
-                                to_from['from'] = "Yes"
-                            else:
-                                to_from['from'] = "No"
-                    if isinstance(diff, dict) and 'client_requirement' in diff:
-                        if isinstance(diff, dict) and 'from' in diff['client_requirement']:
-                            action_diff.append("The client requirement was updated")
-                            to_from['to'] = has_client_requirement
-                            embed_color = discord.Color.blue()
-                            if diff['client_requirement']['from'] is True:
-                                to_from['from'] = "Yes"
-                            else:
-                                to_from['from'] = "None"
-                    if isinstance(diff, dict) and 'description_diff' in diff:
-                        if diff['description_diff'] == 'Check the history API for the exact diff':
-                            history = get_user_story_history(user_story_id=data['data']['id'],
-                                target_time=data['date'], time_threshold_ms=500)
-                            if history is not None:
-                                api_diff = history.get('diff', {})
-                                if isinstance(api_diff, dict) and 'description' in api_diff:
-                                    action_diff.append("The description was updated. "
-                                    "Check pinned for new description!")
-                                    description = api_diff['description'][1]
-                                    embed_color = discord.Color.blue()
-                                else:
-                                    action_diff.append("Unknown Change was detected in the API")
-                                    print("Unknown change detected in the API")
-                    if isinstance(diff, dict) and 'due_date' in diff:
-                        if isinstance(diff, dict) and 'to' in diff['due_date']:
-                            due_date = diff['due_date']['to']
-                            to_from['from'] = diff['due_date']['from']
-                            to_from['to'] = due_date
-                            action_diff.append("The due date was changed.")
-                    if isinstance(diff, dict) and 'swimlane' in diff:
-                        if isinstance(diff, dict) and 'to' in diff['swimlane']:
-                            swimlane = diff['swimlane']['to']
-                            action_diff.append("The swimlane was updated")
-                    if isinstance(diff, dict) and 'status' in diff:
-                        if isinstance(diff, dict) and 'from' in diff['status']:
-                            action_diff.append("The status was updated")
-                            to_from['to'] = status
-                            to_from['from'] = diff['status']['from']
-                            embed_color = discord.Color.blue()
-                    if isinstance(diff, dict) and 'team_requirement' in diff:
-                        if isinstance(diff, dict) and 'from' in diff['team_requirement']:
-                            action_diff.append("The team requirement was updated")
-                            to_from['to'] = has_team_requirement
-                            if diff['team_requirement']['from'] is True:
-                                to_from['from'] = "Yes"
-                            else:
-                                to_from['from'] = "None"
-                            embed_color = discord.Color.blue()
-            if action_diff:
-                if (
-                    action_diff[0] == "New Comment!" or
-                    action_diff[0] == "Comment Deleted!" or
-                    action_diff[0] == "Comment edited."
-                    ):
-                    action_diff.append(data['change']['comment'])
-
+                to_from['from'] = "No"
+        if safe_get(diff, ['client_requirement', 'from']) is not None:
+            action_diff.append("The client requirement was updated")
+            to_from['to'] = has_client_requirement
+            embed_color = discord.Color.blue()
+            if diff['client_requirement']['from'] is True:
+                to_from['from'] = "Yes"
+            else:
+                to_from['from'] = "None"
+        if safe_get(diff, ['description_diff']) is not None:
+            if diff['description_diff'] == 'Check the history API for the exact diff':
+                history = get_user_story_history(user_story_id=data['data']['id'],
+                    target_time=data['date'], time_threshold_ms=500)
+                if history is not None:
+                    api_diff = history.get('diff', {})
+                    if safe_get(api_diff, ['description']) is not None:
+                        action_diff.append("The description was updated. "
+                        "Check pinned for new description!")
+                    description = api_diff['description'][1]
+                    embed_color = discord.Color.blue()
+                else:
+                    action_diff.append("Unknown Change was detected in the API")
+                    print("Unknown change detected in the API")
+        if safe_get(diff, ['due_date', 'to']) is not None:
+            due_date = diff['due_date']['to']
+            to_from['from'] = diff['due_date']['from']
+            to_from['to'] = due_date
+            action_diff.append("The due date was changed.")
+        if safe_get(diff, ['swimlane', 'to']) is not None:
+            swimlane = diff['swimlane']['to']
+            action_diff.append("The swimlane was updated")
+        if safe_get(diff, ['status', 'from']) is not None:
+            action_diff.append("The status was updated")
+            to_from['to'] = status
+            to_from['from'] = diff['status']['from']
+            embed_color = discord.Color.blue()
+        if safe_get(diff, ['team_requirement', 'from']) is not None:
+            action_diff.append("The team requirement was updated")
+            to_from['to'] = has_team_requirement
+            if diff['team_requirement']['from'] is True:
+                to_from['from'] = "Yes"
+            else:
+                to_from['from'] = "None"
+            embed_color = discord.Color.blue()
 
     if (action in ['create', 'change']):
+        if assigned_users is None:
+            assigned_users = []
+        if watchers is None:
+            watchers = []
         mention_users = assigned_users + [item for item in watchers if item not in assigned_users]
         mention = []
         for user in mention_users:
@@ -423,9 +357,9 @@ def userstory_handler(data):
 #                inline=False
 #                )
         embed.set_author(
-            name=author,
-            url=author_url,
-            icon_url=author_icon_url
+            name=userinfo.name,
+            url=userinfo.url,
+            icon_url=userinfo.avatar
             )
         embed.set_thumbnail(url=thumbnail_url)
         if to_from:
