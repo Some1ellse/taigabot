@@ -81,7 +81,7 @@ def respond():
             'embed2': embed2,
             'new_thread': thread,
             'description_new': flags['description_new'], # pylint: disable=invalid-sequence-index
-            'mention': flags['mention']
+            'mention': flags['mention'] if 'mention' in flags else []
             }
 
         client.loop.create_task(send_post(**post_args))

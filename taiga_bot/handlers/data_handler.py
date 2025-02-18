@@ -18,11 +18,11 @@ forum_tags = ForumTags(tags={})
 
 class UserInfo:
     """Stores user information as a dictionary {user_id: user_name}."""
-    def __init__(self, name=None, url=None, avatar=None, id=None):
+    def __init__(self, name=None, url=None, avatar=None, user_id=None):
         self.name = name
         self.url = url
         self.avatar = avatar
-        self.id = id
+        self.user_id = user_id
 
     def get(self, dictionary):
         """Get user information from a dictionary"""
@@ -35,7 +35,7 @@ class UserInfo:
             "https://pm.ks-webserver.com/v-1721729942015/images/"
             "user-avatars/user-avatar-01.png"
         )
-        self.id = safe_get(dictionary, ['by', 'id'])
+        self.user_id = safe_get(dictionary, ['by', 'id'])
         return self
 
 userinfo = UserInfo()
@@ -124,7 +124,7 @@ def userstory_handler(payload):
     # TODO: Look into mentioning users who are tagged in comments.
     action_diff = []
     api_data = None
-    assigned = safe_get(payload, ['data', 'assigned_to'])
+    assigned = safe_get(payload, ['data', 'assigned_to', 'full_name'])
     assigned_users = safe_get(payload, ['data', 'assigned_users'])
     blocked = safe_get(payload, ['data', 'is_blocked']) # pylint: disable=unused-variable
     blocked_reason = safe_get(
@@ -171,6 +171,7 @@ def userstory_handler(payload):
             "https://pm.ks-webserver.com/v-1721729942015"
             "/images/project-logos/project-logo-01.png"
         )
+    user_story_id = safe_get(payload, ['data', 'id'])
     watchers = safe_get(payload, ['data', 'watchers'])
 
 
@@ -214,7 +215,8 @@ def userstory_handler(payload):
                 action_diff.append(change['comment'])
                 embed_color = discord.Color.red()
         diff = safe_get(change, ['diff'])
-        if safe_get(diff, ['assigned_users', 'from']) is not None:
+        if isinstance(diff, dict) and 'assigned_users' in diff and 'from' in diff['assigned_users']:
+            print("Assigned users changed")
             action_diff.append(
                 "The assigned users were changed."
                 " Login to Tiaga to see the new assignements."
@@ -238,8 +240,8 @@ def userstory_handler(payload):
                 to_from['from'] = "None"
         if safe_get(diff, ['description_diff']) is not None:
             if diff['description_diff'] == 'Check the history API for the exact diff':
-                history = get_user_story_history(user_story_id=data['data']['id'],
-                    target_time=data['date'], time_threshold_ms=500)
+                history = get_user_story_history(user_story_id=user_story_id,
+                    target_time=payload['date'], time_threshold_ms=500)
                 if history is not None:
                     api_diff = history.get('diff', {})
                     if safe_get(api_diff, ['description']) is not None:
@@ -283,7 +285,8 @@ def userstory_handler(payload):
             api_data = None
             api_data = get_user(user)
             if isinstance(api_data, dict) and 'bio' in api_data:
-                mention.append(find_mention(api_data['bio']))
+                if find_mention(api_data['bio']) is not None:
+                    mention.append(find_mention(api_data['bio']))
                 print(mention)
         full_description = adjust_markdown(description)
 
@@ -433,33 +436,33 @@ def userstory_handler(payload):
 
     return thread, embed, embed2, flags
 
-def embed_builder(data):
+def embed_builder(payload):
     """Build an embed for the provided data"""
     embed = None
     embed = discord.Embed(
-        title=data['embed_title'],
-        description=data['embed_description'],
-        url=data['item_url'],
-        color=data['color'],
+        title=payload['embed_title'],
+        description=payload['embed_description'],
+        url=payload['item_url'],
+        color=payload['color'],
         timestamp=datetime.datetime.now(datetime.UTC),
     )
     embed.set_author(
-        name=data['author'],
-        url=data['author_url'],
-        icon_url=data['author_icon_url']
+        name=payload['author'],
+        url=payload['author_url'],
+        icon_url=payload['author_icon_url']
         )
-    embed.set_thumbnail(url=data['thumbnail_url'])
-    if data['embed_field1_name']:
+    embed.set_thumbnail(url=payload['thumbnail_url'])
+    if payload['embed_field1_name']:
         embed.add_field(
-            name=data['embed_field1_name'],
-            value=data['embed_field1_value'],
-            inline=data['embed_field1_inline']
+            name=payload['embed_field1_name'],
+            value=payload['embed_field1_value'],
+            inline=payload['embed_field1_inline']
             )
-    if data['embed_field2_name']:
+    if payload['embed_field2_name']:
         embed.add_field(
-            name=data['embed_field2_name'],
-            value=data['embed_field2_value'],
-            inline=data['embed_field2_inline']
+            name=payload['embed_field2_name'],
+            value=payload['embed_field2_value'],
+            inline=payload['embed_field2_inline']
             )
     embed.set_footer(
         text='Powered by Taiga REST API | Coded by @Some1ellse',
@@ -491,11 +494,11 @@ def split_content(content, limit=1900):
 
     return content[:split_index], content[split_index:].lstrip()
 
-def thread_builder(data):
+def thread_builder(payload):
     """ Build a thread from the provided data """
     thread = {
-        "name": data['user_story'],
-        "content": data['description'],
+        "name": payload['user_story'],
+        "content": payload['description'],
         "auto_archive_duration": 4320
     }
     return thread
