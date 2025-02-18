@@ -116,7 +116,10 @@ async def delete_post(user_story):
 async def send_post(user_story, embed, embed2, new_thread=None, description_new=None, mention=None):
     """Try to send provided message to the indicated forum via bot"""
     is_thread = False
-    mention = await build_mentions(mention)
+    if len(mention) == 1 and mention[0] == None:
+        print('No mentions found')
+    else:
+        mention = await build_mentions(mention)
     try:
         print('Sending Forum Post to Discord...')
         channel = client.get_channel(FORUM_ID)
